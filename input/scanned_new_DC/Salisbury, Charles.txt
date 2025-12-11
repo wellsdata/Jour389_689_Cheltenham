@@ -1,0 +1,28 @@
+Fields,Results
+No. (top right),A. 23/13
+Permit No.,A 55715
+Year (Health Department),1893
+Ward,13
+Date of Death,March 8th 1893
+Full Name of Deceased,Charles Salisbury
+Sex,Male
+Age,16
+Years (Age),
+Months (Age),
+Days (Age),
+Color,Black
+Married, Single, Widow or Widower,
+Occupation,-
+Birth Place,Chestertown Md
+Duration of Residence in the City of Baltimore,Brought to Hospital in Jany 1893
+Place of Death,Md Univ Hospital
+Cause of Death (First Primary),
+Cause of Death (Second Immediate),Septicaemia
+Duration of Last Sickness,About 8 wks
+Place of Burial,H.P. Cemetery
+Date of Burial,March 15/93
+Undertaker,Geo. E. Brown
+Undertaker's Place of Business,Health Office
+M.D. Attendant's Name,Puisney L. Davis M.D.
+M.D. Attendant's Title/Role,Coroner
+M.D. Attendant's Address,746 Dolphin Cr

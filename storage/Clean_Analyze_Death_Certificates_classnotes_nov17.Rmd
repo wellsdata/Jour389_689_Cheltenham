@@ -1,0 +1,390 @@
+---
+title: "Clean_Analyze_Death_Certificates"
+author: "Wells"
+date: "2025-11-17"
+output: html_document
+---
+
+This exercise will involve cleaning, tabulating and mapping the death certificate data from Cheltenham and Jessup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# install.packages("htmlwidgets")
+# install.packages("leaflet")
+# install.packages("sf")
+# install.packages("googlesheets4")
+library(tidyverse)
+library(rio)
+library(janitor)
+library(htmlwidgets)
+library(leaflet)
+library(sf)
+library(googlesheets4)
+library(tidycensus)
+library(janitor)
+```
+
+### Import Extracted Death Certificate Data
+```{r}
+gs4_deauth()  
+dc <- read_sheet("https://docs.google.com/spreadsheets/d/13CthhhfLHiPZqr1P67SCa9BVUyb5Rl6OBhUwvqawDEk/edit?usp=sharing", sheet = "responses_copy") |> 
+    select(-Duplicates) |> 
+  clean_names()
+
+
+```
+
+## Mapping place of origin
+
+```{r}
+
+dc |> 
+  mutate(origin = birth_place_city_or_town_and_state_write_it_as_bowie_md) |> 
+  count(origin) |> 
+  arrange(desc(n))
+
+
+```
+
+### clean origin
+
+```{r}
+dc <- dc |> 
+  mutate(origin = str_squish(birth_place_city_or_town_and_state_write_it_as_bowie_md)) |> 
+  mutate(county_origin = case_when(
+         str_detect(origin, "(?i)^md\\.?$") ~ "Maryland", 
+         str_detect(origin, "(?i)baltimore county") ~ "Baltimore County",  # Check this FIRST
+         str_detect(origin, "(?i)baltimore") ~ "Baltimore city",
+         str_detect(origin, "(?i)easton") ~ "Talbot County",
+         str_detect(origin, "(?i)frederick") ~ "Frederick County",
+         str_detect(origin, "(?i)Prince George's County") ~ "Prince George's County",
+         str_detect(origin, "(?i)Prince Georges County, Md.") ~ "Prince George's County",
+          str_detect(origin, "(?i)Seat Pleasant") ~ "Prince George's County",
+         str_detect(origin, "(?i)unknown") ~ "Unknown",
+         str_detect(origin, "(?i)Centreville") ~ "Queen Anne's County",
+         str_detect(origin, "(?i)church hill") ~ "Queen Anne's County",
+         str_detect(origin, "(?i)Salisbury") ~ "Wicomico County",
+         str_detect(origin, "(?i)Pocomoke") ~ "Worcester County",
+         str_detect(origin, "(?i)Anne Arrundel County") ~ "Anne Arundel County",
+          is.na(origin) ~ "Unknown",
+               TRUE ~ origin
+         )) |> 
+      mutate(county_origin = str_remove_all(county_origin, ", Md.")) 
+```
+
+
+```{r}
+
+
+dc |> 
+  count(county_origin) |> 
+  arrange(desc(n))
+
+
+```
+
+Map
+```{r}
+
+map <- get_acs(geography = "county", 
+              variables = c(number_households = "B19001_001", median_income = "B19013_001"), 
+               state = "MD", 
+               year = 2020, geometry = TRUE) %>% 
+  mutate(NAME = str_remove_all(NAME, ", Maryland")) |> 
+  select(GEOID, NAME) |> 
+  distinct()
+
+#join geocoordinates with baltcity
+dc_map <- dc |>  
+ inner_join(map, by=c("county_origin"="NAME")) 
+
+
+```
+
+# First, convert to sf object
+
+```{r}
+dc_map <- dc_map |> 
+  st_as_sf() |> 
+  sf::st_transform(4326) |> 
+  add_count(county_origin, name = "county_count")
+```
+
+
+```{r}
+
+# Use colorFactor for categorical data
+pal <- colorFactor(
+  palette = "viridis",  # or "Set1", "Dark2", etc for categories
+  domain = dc_map$county_count
+)
+
+
+leafMap <- leaflet(data = dc_map) %>%
+  addProviderTiles(providers$Esri.WorldStreetMap) %>%
+  addPolygons(
+    color = ~pal(county_count),
+    weight = 2.5,
+    fillOpacity = 0.5,
+    label = ~paste0("Count of inmates from ", county_origin, ": ", county_count)
+  ) 
+  
+leafMap
+```
+
+#all the names, age in the tooltip. make a table in tibble
+#rationalize the colors. min vs max distribution. by quartiles
+#represent the people who dont have a specific county. color rest of the state gray and popup for the whole total
+#annotation with state totals, md va, fl
+
+
+
+
+# Clean names in Death Certificates
+## Check for duplicate names
+```{r}
+
+dc |> 
+  count(name) |> 
+  filter(n > 1)
+
+```
+
+mark duplicates
+```{r}
+
+dupes <- dc |> 
+  count(name) |> 
+  filter(n > 1) |> 
+  select(name) |> 
+  mutate(name = str_squish(str_replace_all(name,'\\.',''))) |> 
+  pull(name)
+
+```
+
+
+```{r}
+
+dc <- dc |> 
+  mutate(dupes = case_when(
+    name %in% dupes ~ "x")
+  ) |> 
+  arrange(personal_id) |> 
+  select(dupes, everything()) 
+
+
+```
+
+
+combine cause of death
+I am combining the cause of death and if different columns unless there was a mistake
+```{r}
+
+dc <- dc |> 
+  mutate(cause_death_update = paste(cause_of_death, if_cause_of_death_different_put_that_here, sep = "; ")) |> 
+  mutate(cause_death_update = str_replace_all(cause_death_update, "NA", "")) |> 
+  #removing pesky leading, trailing semicolons
+  mutate(cause_death_update = str_remove_all(cause_death_update, "^;+|;+$")) |> 
+  mutate(cause_death_update = str_remove_all(cause_death_update, "^[;\\s]+|[;\\s]+$")) |> 
+  mutate(cause_death_update = str_replace_all (cause_death_update, "blank", "")) |> 
+  separate(col = cause_death_update, into = c("death_cause1", "death_cause2", "death_cause3"), sep = ";", extra = "drop")
+
+```
+
+# Extract, tabulate death case
+```{r}
+
+death_categories <- dc |>
+  pivot_longer(cols = c(death_cause1, death_cause2, death_cause3), 
+               names_to = "cause_type", 
+               values_to = "cause") |>
+  count(cause) |>
+  arrange(desc(n))
+  
+
+```
+
+#Categorize
+
+```{r}
+
+death_categories <- death_categories |> 
+  mutate(category = case_when(
+         cause=="Pulmonary Tuberculosis" ~ "tuberculosis",
+         cause=="Tuberculosis" ~ "tuberculosis",
+         cause=="Pulmonary tuberculosis" ~ "tuberculosis", 
+         cause=="Military tuberculosis" ~ "tuberculosis", 
+         cause=="General Tuberculosis" ~ "tuberculosis", 
+         cause=="Lobar Pneumonia" ~ "pneumonia",
+         cause=="Pneumonia" ~ "pneumonia",
+         cause=="Pneumonia Double so called" ~ "pneumonia",
+         cause=="Pneumonia Lobar" ~ "pneumonia",
+         TRUE ~ cause
+         )) |> 
+  group_by(category) |> 
+  summarize(total=sum(n)) |> 
+  arrange(desc(total))
+
+
+```
+
+# Notes
+#-----------Notes -----------------
+
+
+```{r}
+
+dc <- dc |> 
+  mutate(origin = str_squish(birth_place_city_or_town_and_state_write_it_as_bowie_md)) |> 
+  mutate(origin_clean = case_when(
+         str_detect(origin, "(?i)^md\\.?$") ~ "Maryland", 
+         str_detect(origin, "(?i)baltimore county") ~ "Baltimore_County",  # Check this FIRST
+         str_detect(origin, "(?i)baltimore") ~ "Baltimore_City",
+         str_detect(origin, "(?i)easton") ~ "Easton",
+         str_detect(origin, "(?i)frederick") ~ "Frederick",
+         str_detect(origin, "(?i)Prince George's County") ~ "Prince_Georges_County",
+         str_detect(origin, "(?i)Prince Georges County, Md.") ~ "Prince_Georges_County",
+         str_detect(origin, "(?i)unknown") ~ "Unknown",
+         is.na(origin) ~ "Unknown",
+            TRUE ~ origin
+  )) |> 
+  mutate(origin_clean = str_remove_all(origin_clean, ", Md.")) |> 
+    mutate(county_origin = case_when(
+      origin_clean=="Baltimore_County" ~ "Baltimore County",
+      origin_clean=="Baltimore_City" ~ "Baltimore city",
+      origin_clean=="Easton" ~ "Talbot County",
+      origin_clean=="Frederick" ~ "Frederick County",
+      origin_clean=="Prince_Georges_County" ~ "Prince George's County",
+      origin_clean=="Seat Pleasant" ~ "Prince George's County",
+      origin_clean=="Centreville" ~ "Queen Anne's County",
+      origin_clean=="Church Hill" ~ "Queen Anne's County",
+      origin_clean=="Salisbury" ~ "Worcester County",
+      str_detect(origin_clean, "(?i)Pocomoke") ~ "Worcester County",
+      TRUE ~ origin_clean))
+      
+      
+    
+```
+
+```{r}
+leafMap <- leaflet(data = dc_map) %>%
+  addProviderTiles(providers$Esri.WorldStreetMap) %>%
+  addPolygons(
+    color = ~pal(county_origin),
+    weight = 2.5,
+    smoothFactor = 0.2,
+    fillOpacity = 0.5,
+    label = ~paste0(name, " - Born in: ", county_origin),  # Show name and origin
+    popup = ~paste0("<b>", name, "</b><br>",
+                    "Birth place: ", county_origin, "<br>",
+                    "Death date: ", death_date))  # Add popup for more info
+  # ) %>%
+  # addLegend(
+  #   position = "bottomright",
+  #   pal = pal,
+  #   values = ~county_origin,
+  #   title = "Origin of Cheltenham Inmates"
+  # )
+
+saveWidget(leafMap, "leafMap.html")
+leafMap
+```
+<<<<<<< HEAD:Clean_Analyze_Death_Certificates_class_nov17.Rmd
+=======
+
+
+#--------------NOTES BELOW ----------------------------------------------------
+
+```{r}
+
+# Use colorFactor for categorical data
+pal <- colorFactor(
+  palette = "viridis",  # or "Set1", "Dark2", etc for categories
+  domain = dc_map$county_count
+)
+
+
+leafMap <- leaflet(data = dc_map) %>%
+  addProviderTiles(providers$Esri.WorldStreetMap) %>%
+  addPolygons(
+    color = ~pal(county_count),
+    weight = 2.5,
+    fillOpacity = 0.5,
+    label = ~paste0("Count of inmates from ", county_origin, ": ", county_count)
+  ) 
+  
+leafMap
+#saveWidget(leafMap, "leafMap.html")
+```
+
+
+
+
+#---------------NOTES BELOW -----------------------------------
+
+```{r}
+
+dc <- dc |> 
+  mutate(origin = str_squish(birth_place_city_or_town_and_state_write_it_as_bowie_md)) |> 
+  mutate(origin_clean = case_when(
+         str_detect(origin, "(?i)^md\\.?$") ~ "Maryland", 
+         str_detect(origin, "(?i)baltimore county") ~ "Baltimore_County",  # Check this FIRST
+         str_detect(origin, "(?i)baltimore") ~ "Baltimore_City",
+         str_detect(origin, "(?i)easton") ~ "Easton",
+         str_detect(origin, "(?i)frederick") ~ "Frederick",
+         str_detect(origin, "(?i)Prince George's County") ~ "Prince_Georges_County",
+         str_detect(origin, "(?i)Prince Georges County, Md.") ~ "Prince_Georges_County",
+         str_detect(origin, "(?i)unknown") ~ "Unknown",
+         is.na(origin) ~ "Unknown",
+            TRUE ~ origin
+  )) |> 
+  mutate(origin_clean = str_remove_all(origin_clean, ", Md.")) |> 
+    mutate(county_origin = case_when(
+      origin_clean=="Baltimore_County" ~ "Baltimore County",
+      origin_clean=="Baltimore_City" ~ "Baltimore city",
+      origin_clean=="Easton" ~ "Talbot County",
+      origin_clean=="Frederick" ~ "Frederick County",
+      origin_clean=="Prince_Georges_County" ~ "Prince George's County",
+      origin_clean=="Seat Pleasant" ~ "Prince George's County",
+      origin_clean=="Centreville" ~ "Queen Anne's County",
+      origin_clean=="Church Hill" ~ "Queen Anne's County",
+      origin_clean=="Salisbury" ~ "Worcester County",
+      str_detect(origin_clean, "(?i)Pocomoke") ~ "Worcester County",
+      TRUE ~ origin_clean))
+      
+      
+    
+```
+
+
+
+```{r}
+leafMap <- leaflet(data = dc_map) %>%
+  addProviderTiles(providers$Esri.WorldStreetMap) %>%
+  addPolygons(
+    color = ~pal(county_origin),
+    weight = 2.5,
+    smoothFactor = 0.2,
+    fillOpacity = 0.5,
+    label = ~paste0(name, " - Born in: ", county_origin),  # Show name and origin
+    popup = ~paste0("<b>", name, "</b><br>",
+                    "Birth place: ", county_origin, "<br>",
+                    "Death date: ", death_date))  # Add popup for more info
+  # ) %>%
+  # addLegend(
+  #   position = "bottomright",
+  #   pal = pal,
+  #   values = ~county_origin,
+  #   title = "Origin of Cheltenham Inmates"
+  # )
+
+saveWidget(leafMap, "leafMap.html")
+leafMap
+```
+
+
+
+>>>>>>> 453a7df6ef8554c44d435057fe3a65c55ae02632:Clean_Analyze_Death_Certificates.Rmd

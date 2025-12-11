@@ -1,0 +1,74 @@
+Fields,Results
+Registration Dist. No.,240
+No.,03164
+1. PLACE OF DEATH - County,Pr. Georges
+1. PLACE OF DEATH - Village or City,Cheltenham
+1. PLACE OF DEATH - No. (If death occurred in a hospital or institution give its NAME instead of street and number),House of Reform
+1. PLACE OF DEATH - Ward,
+1. PLACE OF DEATH - Length of residence in city or town where death occurred,2 yrs. 10 mos. 16 ds.
+1. PLACE OF DEATH - How long in U.S. if of foreign birth?,
+2. FULL NAME,Gordon Giles
+2. FULL NAME - (a) Residence: No.,226 W. Lanvale
+2. FULL NAME - (a) Residence: St.,
+2. FULL NAME - (a) Residence: Ward,
+2. FULL NAME - (Usual place of abode) City or Town,Balto.
+2. FULL NAME - If nonresident give city or town and State,
+3. SEX,Male
+4. COLOR OR RACE,Colored
+5. SINGLE, MARRIED, WIDOWED, OR DIVORCED (write the word),Single
+5a. If married, widowed, or divorced HUSBAND OF (OR) WIFE OF,
+6. DATE OF BIRTH (month, day, and year) - Month,May
+6. DATE OF BIRTH (month, day, and year) - Day,31
+6. DATE OF BIRTH (month, day, and year) - Year,1916
+7. AGE - Years,17
+7. AGE - Months,10
+7. AGE - Days,28
+7. AGE - If LESS than 1 day, hrs. or min.,
+8. Trade, profession, or particular kind of work done, as SPINNER, SAWYER, BOOKKEEPER, etc.,Inmate
+9. Industry or business in which work was done, as SILK MILL, SAW MILL, BANK, etc.,House of Reform
+10. Date deceased last worked at this occupation (month and year),March 1934
+11. Total time (years) spent in this occupation,11
+12. BIRTHPLACE (city or town),Baltimore
+12. BIRTHPLACE (State or country),Maryland
+13. NAME (Father),Unknown
+14. BIRTHPLACE (city or town) (Father),
+14. BIRTHPLACE (State or country) (Father),
+15. MAIDEN NAME (Mother),Unknown
+16. BIRTHPLACE (city or town) (Mother),
+16. BIRTHPLACE (State or country) (Mother),
+17. INFORMANT,John B. Pyles, Supt.
+17. INFORMANT - (Address),Cheltenham, Md.
+18. BURIAL, CREMATION, OR REMOVAL - Place,Mt. Auburn
+18. BURIAL, CREMATION, OR REMOVAL - Date,April 1, 1935
+19. UNDERTAKER,Mrs. George C. Rolla
+19. UNDERTAKER - (Address),1639 Druid Hill Ave.
+20. FILED - Month,Mar.
+20. FILED - Day,28
+20. FILED - Year,1935
+20. FILED - Registrar,Mrs. J.R. Smith
+21. DATE OF DEATH - Month,Mar.
+21. DATE OF DEATH - Day,28
+21. DATE OF DEATH - Year,1935
+22. I HEREBY CERTIFY, That I attended deceased from,Mch 20, 1935
+22. I HEREBY CERTIFY, That I attended deceased to,Mch 28, 1935
+22. I last saw h_ alive on,Mch 28, 1935
+22. Death is said to have occurred on the date stated above, at,10 A.M.
+THE PRINCIPAL CAUSE OF DEATH and related causes of importance were as follows:,Acute Lobar Pneumonia
+Date of onset (for Principal Cause of Death),
+Other Contributory Causes of importance:,
+Date of onset (for Other Contributory Causes),
+Name of operation,
+Date of (operation),
+What test confirmed diagnosis?,
+Was there an autopsy?,
+23. If death was due to external causes (VIOLENCE) fill in also the following: Accident, suicide, or homicide?,
+23. If death was due to external causes (VIOLENCE) fill in also the following: Date of injury,
+23. If death was due to external causes (VIOLENCE) fill in also the following: Where did injury occur?,
+23. If death was due to external causes (VIOLENCE) fill in also the following: Specify whether injury occurred in INDUSTRY, IN HOME, or IN PUBLIC PLACE,
+Manner of injury,
+Nature of injury,
+24. Was disease or injury in any way related to occupation of deceased?,No
+24. If so, specify,
+(Signed),William H. Hiss
+Title,M.D.
+(Address),Crown Md.

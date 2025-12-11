@@ -1,0 +1,119 @@
+---
+title: "Cheltenham Article Data Extraction"
+author: "Akira Kyles"
+date: "11-19-2025"
+output: html_document
+---
+
+#rsw comment - cut - boilerplate This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+#rsw comment - cut - Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+
+#rsw comment:missing - an explanation of the purpose of this notebook.
+Akira, Brandyn
+newspaper article data analysis:
+https://docs.google.com/spreadsheets/d/1XFRMzN-xK1uQcvaEIOV7wuEPH6lYrvVpvgE3w6ngKPU/edit?gid=566920609#gid=566920609Links to an external site.
+Create new notebook
+read in the data
+count articles over time
+ggplot of articles over time
+propose a set of categories on the types of articles here
+--grand jury / lawsuits / investigations of Cheltenham
+--Cheltenham description
+--Child imprisoned announcement
+count newspaper names
+extract newspaper names from "Important Details" column
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+options(scipen=999)
+install.packages("ggrepel")
+install.packages("ggplot2")
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(ggplot2)
+library(ggrepel)
+```
+
+
+```{r}
+cheltenham_ex <- read_csv("~/GitHub/jour772/Cheltenham/data/Cheltenham_Article_Data_Extraction_AK_BF_Resonses1.csv") |> 
+  clean_names()
+```
+
+#rsw comment - Good but you need to point it to your GitHub so I can download it. This link above points to your laptop
+
+```{r}
+cheltenham_ex <- read_csv("https://raw.githubusercontent.com/Akyles28/jour772/refs/heads/main/Cheltenham/data/Cheltenham_Article_Data_Extraction_AK_BF_Resonses1.csv") |> 
+  clean_names()
+```
+
+
+```{r}
+cheltenham_ex <- cheltenham_ex|> 
+  mutate(date_of_article = mdy(date_of_article))
+```
+#This code counts the newspaper names 
+```{r}
+cheltenham_ex |> 
+  group_by(newspaper_name) |> 
+  summarize(count= n()) |> 
+  arrange(desc(count))
+  
+```
+
+#rsw comment - please provide analysis of this code above. Where is the Afro? One article? We know there are many more. Why don't we capture more Afro articles and how do we fix that?
+
+
+#This code counts the articles over time. 
+```{r}
+cheltenham_ex |> 
+  group_by(date_of_article) |> 
+  summarize(count = n()) |> 
+  arrange(date_of_article)
+```
+#This code creates a new data set to establish a timeline of articles over time. 
+
+#rsw comment: this code failed because  Cheltenham_ex hasn't been created. It's a simple fix but make sure to run your code top to bottom before submitting it next time.
+
+
+```{r}
+news_year <- Cheltenham_ex |>
+# news_year <- cheltenham_ex |> 
+   filter(!is.na(date_of_article)) |> 
+  mutate(year = year(date_of_article)) |>  
+  group_by(year) |> 
+  summarise(count = n()) |> 
+  arrange(desc(count))
+```
+#This code creates a timeline of the articles based on the newspaper name 
+```{r}
+news_year |> 
+  
+  ggplot(aes(x = year, y = count)) +
+   geom_col(fill = "steelblue", position = "dodge") +
+  theme_classic() +
+  labs(x = "Date", 
+       y = "Total Number of Articles", 
+       title = "Cheltenham News Coverage",
+       caption = "Source: Library of Congress. Graphic by Akira Kyles. 11-22-2025")
+```
+#For the set of categories, I think the dataset should add a column called "article_type" and it should include categories such as "Sentencing Announcement", "Recapture Announcement", "Grand Jury Trial" and "Investigation". We can also have an "Other" category for those we don't know how to categorize. 
+#I think it would be easier to create this manually in an excel sheet rather than in R Studio because within the current dataset there's a minimal amount of information to build off of. 
+
+
+#rsw comment - did you "extract newspaper names from "Important Details" column" ? I don't know that from reading this.
+
+
+#rsw comment: cut this below - it's boilerplate
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

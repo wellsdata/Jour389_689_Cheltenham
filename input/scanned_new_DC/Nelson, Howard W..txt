@@ -1,0 +1,78 @@
+Fields,Results
+Registration Dist. No.,240
+1. PLACE OF DEATH - County,Prince Georges
+1. PLACE OF DEATH - Village or City,Cheltenham
+1. PLACE OF DEATH - No.,House of Reformation
+1. PLACE OF DEATH - Ward,
+1. PLACE OF DEATH - Length of residence in city or town where death occurred - yrs,4
+1. PLACE OF DEATH - Length of residence in city or town where death occurred - mos,3
+1. PLACE OF DEATH - Length of residence in city or town where death occurred - ds,28
+1. PLACE OF DEATH - How long in U.S. if of foreign birth? - yrs,
+1. PLACE OF DEATH - How long in U.S. if of foreign birth? - mos,
+1. PLACE OF DEATH - How long in U.S. if of foreign birth? - ds,
+2. FULL NAME,Howard W. Nelson
+2. FULL NAME - (a) Residence - No.,
+2. FULL NAME - (a) Residence - City/Town,Pasadena, Md.
+2. FULL NAME - (a) Residence - St.,
+2. FULL NAME - (a) Residence - Ward,
+2. FULL NAME - If nonresident give city or town and State,
+3. SEX,Male
+4. COLOR OR RACE,Colored
+5. SINGLE, MARRIED, WIDOWED, OR DIVORCED,Single
+5e. If married, widowed, or divorced HUSBAND OF (OR) WIFE OF,
+6. DATE OF BIRTH (month, day, and year),Jan 3 - 1918
+7. AGE - Years,17
+7. AGE - Months,2
+7. AGE - Days,27
+7. AGE - If LESS than 1 day - hrs,
+7. AGE - If LESS than 1 day - min,
+8. Trade, profession, or particular kind of work done,Inmate
+9. Industry or business in which work was done,House of Refor
+10. Date deceased last worked at this occupation (month and year),
+11. Total time (years) spent in this occupation,
+12. BIRTHPLACE (city or town),Pasadena
+12. BIRTHPLACE (State or country),Maryland
+13. NAME (Father),Fountain Nelson
+14. BIRTHPLACE (city or town) (Father),
+14. BIRTHPLACE (State or country) (Father),Maryland
+15. MAIDEN NAME (Mother),Unknown
+16. BIRTHPLACE (city or town) (Mother),
+16. BIRTHPLACE (State or country) (Mother),
+17. INFORMANT,John B. Pyles, Supt.
+17. INFORMANT - (Address),Cheltenham, Md.
+18. BURIAL, CREMATION OR REMOVAL - Place,Mt. Calvary
+18. BURIAL, CREMATION OR REMOVAL - Date,April 3, 1935
+19. UNDERTAKER,Robert H. Cooling
+19. UNDERTAKER - (Address),804 W. Carolina St.
+20. FILED - Date,April 1, 1935
+20. FILED - M. D. or Local Registrar,M. J. Smith
+21. DATE OF DEATH - Month,Mch
+21. DATE OF DEATH - Day,30
+21. DATE OF DEATH - Year,1935
+22. I HEREBY CERTIFY, That I attended deceased from - Month,Jan
+22. I HEREBY CERTIFY, That I attended deceased from - Year,1935
+22. I HEREBY CERTIFY, That I attended deceased to - Month,Mch
+22. I HEREBY CERTIFY, That I attended deceased to - Day,30
+22. I HEREBY CERTIFY, That I attended deceased to - Year,1935
+22. I last saw him alive on - Month,Mch
+22. I last saw him alive on - Day,30
+22. I last saw him alive on - Year,1935
+22. Death is said to have occurred on the date stated above, at,11.5 P. M.
+22. THE PRINCIPAL CAUSE OF DEATH,Tuberculosis
+22. THE PRINCIPAL CAUSE OF DEATH - Date of onset,
+22. Other Contributory Causes of importance,
+22. Name of operation,
+22. Date of operation,
+22. What test confirmed diagnosis?,
+22. Was there an autopsy?,
+23. If death was due to external causes (VIOLENCE) - Accident, suicide, or homicide?,
+23. If death was due to external causes (VIOLENCE) - Date of injury,
+23. If death was due to external causes (VIOLENCE) - Where did injury occur?,
+23. If death was due to external causes (VIOLENCE) - Specify city or town, county and State,
+23. If death was due to external causes (VIOLENCE) - Specify whether injury occurred in INDUSTRY, in HOME, or in PUBLIC PLACE,
+23. If death was due to external causes (VIOLENCE) - Manner of injury,
+23. If death was due to external causes (VIOLENCE) - Nature of injury,
+24. Was disease or injury in any way related to occupation of deceased?,Yes
+24. If so, specify,
+24. (Signed),William H. Gibbons
+24. (Address),Baltimore

@@ -1,0 +1,633 @@
+---David Landerman
+title: "Clean_Analyze_Death_Certificates"
+author: "Wells"
+date: "2025-11-18"
+output: html_document
+---
+
+This is the master Nov 18 update of the Death Certificate cleaning code
+The source comes from this assignment: https://umd.instructure.com/courses/1389907/assignments/7403074?module_item_id=14042327
+
+
+
+This exercise involves cleaning, tabulating and mapping the death certificate data from Cheltenham and Jessup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Load libraries
+```{r}
+#install.packages("htmlwidgets")
+#install.packages("leaflet")
+#install.packages("sf")
+#install.packages('DT')
+library(DT)
+library(tidyverse)
+library(rio)
+library(janitor)
+library(htmlwidgets)
+library(leaflet)
+library(sf)
+library(googlesheets4)
+```
+
+### Import Extracted Death Certificate Data
+```{r}
+
+gs4_deauth()  #guess this is a command that links to google sheets
+dc <- read_sheet("https://docs.google.com/spreadsheets/d/13CthhhfLHiPZqr1P67SCa9BVUyb5Rl6OBhUwvqawDEk/edit?usp=sharing", sheet = "Form Responses 1") |> 
+     clean_names()
+
+
+```
+
+## Check for duplicate names
+```{r}
+
+dc |> 
+  count(name) |> 
+  filter(n > 1)
+
+```
+
+mark duplicates
+```{r}
+
+dupes <- dc |> 
+  count(name) |> 
+  filter(n > 1) |> 
+  select(name) |> 
+  mutate(name = str_squish(str_replace_all(name,'\\.',''))) |> #what is \\. (dictionary of this type of operator?)
+  pull(name) #note to look this command later
+
+```
+
+
+```{r}
+
+dc <- dc |> 
+  mutate(dupes = case_when(
+    name %in% dupes ~ "x")
+  ) |> 
+  arrange(personal_id) |> 
+  select(dupes, everything()) 
+
+
+```
+
+
+combine cause of death
+I am combining the cause of death and if different columns unless there was a mistake
+```{r}
+
+dc <- dc |> 
+  mutate(if_cause_of_death_different_put_that_here = str_replace_all(if_cause_of_death_different_put_that_here, "(?i)^and ", "")) |> #DL add remove leading "and"
+  mutate(cause_death_update = paste(cause_of_death, if_cause_of_death_different_put_that_here, sep = "; ")) |> 
+  mutate(cause_death_update = str_replace_all(cause_death_update, "(?i) and ", "; ")) |>
+  mutate(cause_death_update = str_replace_all(cause_death_update, "(?i) & ", "; ")) |>
+  #^DL Added, some conditions still have "and" separating conditions
+  mutate(cause_death_update = str_replace_all(cause_death_update, "NA", "")) |> 
+  mutate(cause_death_update = str_replace_all(cause_death_update, "N/A", "")) |> 
+  mutate(cause_death_update = str_replace_all (cause_death_update, "\\(blank\\)", "")) |>
+  mutate(cause_death_update = str_replace_all (cause_death_update, "\\[blank\\]", "")) |>
+  #^DL Added changes blanks to include the brackets and parenthesis
+  #removing pesky leading, trailing semicolons
+  mutate(cause_death_update = str_remove_all(cause_death_update, "^;+|;+$")) |> 
+  mutate(cause_death_update = str_remove_all(cause_death_update, "^[;\\s]+|[;\\s]+$")) |> 
+  
+  mutate(cause_death_update = na_if(cause_death_update, "")) |>
+  #^DL Added this was the reason for the blank cells
+  separate(col = cause_death_update, into = c("death_cause1", "death_cause2", "death_cause3"), sep = ";", extra = "drop") %>% 
+  mutate(death_cause2 = na_if(death_cause2, " ")) |>
+  mutate(death_cause3 = na_if(death_cause3, " ")) %>% 
+  mutate(death_cause1 = str_trim(death_cause1)) |>
+  mutate(death_cause2 = str_trim(death_cause2)) |>
+  mutate(death_cause3 = str_trim(death_cause3))
+#DL Added for some reason some of the cells just had a single space in them and some had leading/trailing spaces that complicated filtering later on, this fixes that
+
+```
+```{r}
+dccheck<-dc %>% 
+  select(personal_id,name, cause_of_death, if_cause_of_death_different_put_that_here, death_cause1,death_cause2,death_cause3)
+#purely for simplified view for refinement
+```
+
+# Extract, tabulate death case
+```{r}
+
+death_categories <- dc |>
+  mutate(death_cause1 = case_when(
+  if_all(c(death_cause1, death_cause2, death_cause3), is.na) ~ "not specified",.default = death_cause1)) %>% 
+  #this is to make sure that when all three death_causes are NA that the death is labeled as not specified
+  pivot_longer(cols = c(death_cause1, death_cause2, death_cause3), 
+               names_to = "cause_type", 
+               values_to = "cause",
+               values_drop_na = TRUE) |>
+              #this is to ensure that all the NAs that are place fillers in cause2 and cause 3 dont make it look like there are three times as many deaths in total
+  count(cause) |>
+  arrange(desc(n))
+  
+
+```
+
+### Categorize, normalize causes of death
+
+```{r}
+
+death_categories_summary <- death_categories |> 
+   mutate(cause = str_squish(str_remove_all(cause, "[[:punct:]]"))) |> 
+  mutate(category = case_when(
+         str_detect(cause, "(?i)tuberculosis") ~ "tuberculosis",
+         str_detect(cause, "(?i)pneumonia") ~ "pneumonia",
+         str_detect(cause, "(?i)typhoid") ~ "typhoid",
+         str_detect(cause, "(?i)asthma") ~ "asthma",
+         str_detect(cause, "(?i)tubercul|phthisis|pthisis|consumption|Terberculosis") ~ "tuberculosis",
+      str_detect(cause, "(?i)meningitis") ~ "meningitis",
+      str_detect(cause, "(?i)peritonit") ~ "peritonitis",
+      str_detect(cause, "(?i)cardiac|heart failure|heart trouble|mitral|heart_failure") ~ "cardiac_issues",
+      str_detect(cause, "(?i)exhaustion") ~ "exhaustion",
+      str_detect(cause, "(?i)gastric.*ulcer|ulcer.*gastric") ~ "gastric_ulcer",
+      str_detect(cause,"(?i)Encephalitis") ~ "encephalitis",
+      str_detect(cause,"(?i)malaria") ~ "malaria",
+      #consumption after malaria, malaria should be the primary cause
+      str_detect(cause,"(?i)consumption") ~ "consumption",
+      str_detect(cause,"(?i)Immediate: Asphyxia") ~ "asphyxia",
+      str_detect(cause,"(?i)asthenia") ~ "asthenia",
+      str_detect(cause,"(?i)rage of Lungs") ~ "rage of lungs",
+      str_detect(cause,"(?i)Don't know, Stomack inflama   lungs congested|Oedema of Lungs") ~ "lung_disease",
+      str_detect(cause, "(?i)Hem|rhage|Hemm|y Hemm|wound of groin by hog, hem") ~ "hemorrhage",
+        ## An online search shows oedema of lungs might be more closely associated with heart issues though
+        str_detect(cause, "(?i)influenza") ~ "influenza",
+         is.na(cause) ~ "No_details",
+         TRUE ~ cause
+         )) |> 
+   filter(if_any(everything(), ~!is.na(.))) |> 
+  group_by(category) |> 
+  summarize(total=sum(n)) |> 
+  arrange(desc(total))
+
+
+```
+
+#DL TO RW I used AI to first understand and debug a lot of the issues I was having. Regex is a REAL NIGHTMARE to understand. it wasnt just changing the formatting of the above code from the cause== to the str_detect format. There were problems in the preceeding steps regarding white space, filtering that should have been done earlier, miscounted causes of death, not properly split up groups of causes of death which were noted in different ways. Also in certain cases it really would just be better to clean a select few cells in the response spreadsheet. I have marked those with comments. I am attaching links to the two conversations with AI I needed to work my way through this. I could have done it faster/more directly/succinctly but you know I like to understand what I am doing and learn from it incrementally. That being said I still fear I leaned on AI a little too much for this assignment. In fairness though it is because I did not write the code I was tasked to edit and parts of it were super conceptually complicated. I know you hate long explanations but the my chief concern is academic integrity and integrity requires transparency. 
+https://claude.ai/share/07570f58-0378-44eb-9680-2a9be282361e
+https://claude.ai/share/070c4310-ac17-425a-872f-ed55aa77d327
+
+```{r}
+#narrower categories
+dc<-dc %>% 
+  mutate(cause1=death_cause1) %>% 
+  mutate(cause1 = str_squish(str_remove_all(cause1, "[[:punct:]]"))) |> 
+  mutate(category1 = case_when(
+         str_detect(cause1, "(?i)tuberculosis") ~ "tuberculosis",
+         str_detect(cause1, "(?i)pneumonia") ~ "pneumonia",
+         str_detect(cause1, "(?i)typhoid") ~ "typhoid",
+         str_detect(cause1, "(?i)asthma") ~ "asthma",
+         str_detect(cause1, "(?i)tubercul|phthisis|pthisis|consumption|Terberculosis") ~ "tuberculosis",
+          str_detect(cause1, "(?i)meningitis") ~ "meningitis",
+          str_detect(cause1, "(?i)peritonit") ~ "peritonitis",
+          str_detect(cause1, "(?i)cardiac|heart failure|heart trouble|mitral|heart_failure") ~ "cardiac_issues",
+          str_detect(cause1, "(?i)exhaustion") ~ "exhaustion",
+          str_detect(cause1, "(?i)gastric.*ulcer|ulcer.*gastric") ~ "gastric_ulcer",
+          str_detect(cause1,"(?i)Encephalitis") ~ "encephalitis",
+          str_detect(cause1,"(?i)malaria") ~ "malaria",
+          #consumption after malaria, malaria should be the primary cause
+          str_detect(cause1,"(?i)consumption") ~ "consumption",
+          str_detect(cause1,"(?i)Immediate: Asphyxia") ~ "asphyxia",
+          str_detect(cause1,"(?i)asthenia") ~ "asthenia",
+          str_detect(cause1,"(?i)Don't know, Stomack inflama   lungs congested|Oedema of Lungs") ~ "lung_disease",
+          str_detect(cause1,"(?i)rage of Lungs") ~ "rage of lungs", 
+         str_detect(cause1, "(?i)Hem|rhage|Hemm|y Hemm|wound of groin by hog, hem") ~ "hemorrhage",
+        ## An online search shows oedema of lungs might be more closely associated with heart issues though
+        
+        str_detect(cause1, "(?i)influenza") ~ "influenza",
+         is.na(cause1) ~ NA_character_,
+         TRUE ~ cause1
+         )) %>% 
+  
+  mutate(cause2=death_cause2) %>% 
+  mutate(cause2 = str_squish(str_remove_all(cause2, "[[:punct:]]"))) |> 
+  mutate(category2 = case_when(
+         str_detect(cause2, "(?i)tuberculosis") ~ "tuberculosis",
+         str_detect(cause2, "(?i)pneumonia") ~ "pneumonia",
+         str_detect(cause2, "(?i)typhoid") ~ "typhoid",
+         str_detect(cause2, "(?i)asthma") ~ "asthma",
+         str_detect(cause2, "(?i)tubercul|phthisis|pthisis|consumption|Terberculosis") ~ "tuberculosis",
+          str_detect(cause2, "(?i)meningitis") ~ "meningitis",
+          str_detect(cause2, "(?i)peritonit") ~ "peritonitis",
+          str_detect(cause2, "(?i)cardiac|heart failure|heart trouble|mitral|heart_failure") ~ "cardiac_issues",
+          str_detect(cause2, "(?i)exhaustion") ~ "exhaustion",
+          str_detect(cause2, "(?i)gastric.*ulcer|ulcer.*gastric") ~ "gastric_ulcer",
+          str_detect(cause2,"(?i)Encephalitis") ~ "encephalitis",
+          str_detect(cause2,"(?i)malaria") ~ "malaria",
+          #consumption after malaria, malaria should be the primary cause
+          str_detect(cause2,"(?i)consumption") ~ "consumption",
+          str_detect(cause2,"(?i)Immediate: Asphyxia") ~ "asphyxia",
+          str_detect(cause2,"(?i)asthenia") ~ "asthenia",
+          str_detect(cause2,"(?i)Don't know, Stomack inflama   lungs congested|Oedema of Lungs") ~ "lung_disease",
+          str_detect(cause2,"(?i)rage of Lungs") ~ "rage of lungs", 
+         str_detect(cause2, "(?i)Hem|rhage|Hemm|y Hemm|wound of groin by hog, hem") ~ "hemorrhage",
+        ## An online search shows oedema of lungs might be more closely associated with heart issues though
+        
+        str_detect(cause2, "(?i)influenza") ~ "influenza",
+         is.na(cause2) ~ NA_character_,
+         TRUE ~ cause2
+         )) %>% 
+  
+  mutate(cause3=death_cause3) %>% 
+  mutate(cause3 = str_squish(str_remove_all(cause3, "[[:punct:]]"))) |> 
+  mutate(category3 = case_when(
+         str_detect(cause3, "(?i)tuberculosis") ~ "tuberculosis",
+         str_detect(cause3, "(?i)pneumonia") ~ "pneumonia",
+         str_detect(cause3, "(?i)typhoid") ~ "typhoid",
+         str_detect(cause3, "(?i)asthma") ~ "asthma",
+         str_detect(cause3, "(?i)tubercul|phthisis|pthisis|consumption|Terberculosis") ~ "tuberculosis",
+          str_detect(cause3, "(?i)meningitis") ~ "meningitis",
+          str_detect(cause3, "(?i)peritonit") ~ "peritonitis",
+          str_detect(cause3, "(?i)cardiac|heart failure|heart trouble|mitral|heart_failure") ~ "cardiac_issues",
+          str_detect(cause3, "(?i)exhaustion") ~ "exhaustion",
+          str_detect(cause3, "(?i)gastric.*ulcer|ulcer.*gastric") ~ "gastric_ulcer",
+          str_detect(cause3,"(?i)Encephalitis") ~ "encephalitis",
+          str_detect(cause3,"(?i)malaria") ~ "malaria",
+          #consumption after malaria, malaria should be the primary cause
+          str_detect(cause3,"(?i)consumption") ~ "consumption",
+          str_detect(cause3,"(?i)Immediate: Asphyxia") ~ "asphyxia",
+          str_detect(cause3,"(?i)asthenia") ~ "asthenia",
+          str_detect(cause3,"(?i)Don't know, Stomack inflama   lungs congested|Oedema of Lungs") ~ "lung_disease",
+          str_detect(cause3,"(?i)rage of Lungs") ~ "rage of lungs", 
+         str_detect(cause3, "(?i)Hem|rhage|Hemm|y Hemm|wound of groin by hog, hem") ~ "hemorrhage",
+        ## An online search shows oedema of lungs might be more closely associated with heart issues though
+        
+        str_detect(cause3, "(?i)influenza") ~ "influenza",
+         is.na(cause3) ~ NA_character_,
+         TRUE ~ cause3
+         )) %>% 
+  select(-cause1,cause2,cause3)
+#I'm stubborn and its late
+#so now I have my general categories and I want to whittle down
+
+  
+```
+
+```{r}
+dccheck<-dc %>% 
+  select(personal_id,name, cause_of_death, if_cause_of_death_different_put_that_here,death_cause1,death_cause2,death_cause3,category1,category2,category3)
+```
+
+```{r}
+#proposed smaller categories
+#want approval before I implement
+
+dc<-dc %>% 
+  mutate(category1a = case_when(
+    str_detect(category1, "tuberculosis|pneumonia|asthma|influenza|Immediate Asphyxia|Spinal Paralysis|Suffocation|lung_disease") ~ "resperatory",
+    str_detect(category1, "meningitis|peritonitis|No further information given|encephalitis|Diptheria") ~ "infection",
+    str_detect(category1, "typhoid|gastric_ulcer") ~ "intenstinal",
+    str_detect(category1, "Chronic Nephritis|acute parenchymatous nephritis anasarca") ~ "kidney disease",
+    str_detect(category1, "cardiac_issues") ~ "cardiac",
+    str_detect(category1, "hemorrhage|Compression of the Brain") ~ "trauma",
+    str_detect(category1, "exhaustion|delirium|asthenia|Accidental Drowning|Prematurely 6 weeks gestation|Immaturely 6 month baby") ~ "other"
+    )) %>% 
+
+mutate(category2a = case_when(
+    str_detect(category2, "tuberculosis|pneumonia|asthma|influenza|Immediate Asphyxia|Spinal Paralysis|Suffocation|lung_disease") ~ "resperatory",
+    str_detect(category2, "meningitis|peritonitis|No further information given|encephalitis|Diptheria") ~ "infection",
+    str_detect(category2, "typhoid|gastric_ulcer") ~ "intenstinal",
+    str_detect(category2, "Chronic Nephritis|acute parenchymatous nephritis anasarca") ~ "kidney disease",
+    str_detect(category2, "cardiac_issues") ~ "cardiac",
+    str_detect(category2, "hemorrhage|Compression of the Brain") ~ "trauma",
+    str_detect(category2, "exhaustion|delirium|asthenia|Accidental Drowning|Prematurely 6 weeks gestation|Immaturely 6 month baby") ~ "other"
+    )) %>% 
+
+mutate(category3a = case_when(
+    str_detect(category3, "tuberculosis|pneumonia|asthma|influenza|Immediate Asphyxia|Spinal Paralysis|Suffocation|lung_disease") ~ "resperatory",
+    str_detect(category3, "meningitis|peritonitis|No further information given|encephalitis|Diptheria") ~ "infection",
+    str_detect(category3, "typhoid|gastric_ulcer") ~ "intenstinal",
+    str_detect(category3, "Chronic Nephritis|acute parenchymatous nephritis anasarca") ~ "kidney disease",
+    str_detect(category3, "cardiac_issues") ~ "cardiac",
+    str_detect(category3, "hemorrhage|Compression of the Brain") ~ "trauma",
+    str_detect(category3, "exhaustion|delirium|asthenia|Accidental Drowning|Prematurely 6 weeks gestation|Immaturely 6 month baby") ~ "other"
+    ))
+
+
+
+
+#resperatory
+##tuberculosis
+##pneumonia
+##asthma
+##influenza
+##Immediate Asphyxia #(complications from phthisis)
+##Spinal Paralysis #(oedema of the lungs)
+##Suffocation #(pneumonia)
+##lung_disease
+
+
+#intenstinal
+##typhoid
+##gastric_ulcer
+
+
+#cardiac
+##cardiac_issues
+
+#trauma
+##hemorrhage
+##Compression of the Brain
+
+
+#infection
+##meningitis
+##peritonitis
+##No further information given #peritonitis
+##encephalitis
+##Diptheria
+
+#kidney disease
+##Chronic Nephritis
+##acute parenchymatous nephritis anasarca
+
+#other
+##exhaustion
+##delirium
+##asthenia
+##Accidental Drowning
+##Prematurely 6 weeks gestation
+##Immaturely 6 month baby
+
+#Not sure how you want me to prioritize
+
+```
+
+```{r}
+dccheck<-dc %>% 
+  select(personal_id,name, death_cause1,death_cause2,death_cause3,category1a,category2a,category3a)
+```
+
+
+
+### Quick summary
+```{r}
+
+death_categories_summary
+
+```
+
+
+
+```{r}
+#install.packages('DT')
+library(DT)
+
+datatable(death_categories_summary,
+          caption = "Causes of Death, Cheltenham, Jessup",
+          options = list(pageLength = 50))
+
+
+
+```
+
+
+
+## Mapping place of origin
+
+```{r}
+
+dc |> 
+  mutate(origin = birth_place_city_or_town_and_state_write_it_as_bowie_md) |> 
+  count(origin) |> 
+  arrange(desc(n))
+
+
+```
+
+### clean origin
+
+```{r}
+dc <- dc |> 
+  mutate(origin = str_squish(birth_place_city_or_town_and_state_write_it_as_bowie_md)) |> 
+  mutate(county_origin = case_when(
+         str_detect(origin, "(?i)^md\\.?$") ~ "Maryland", 
+         str_detect(origin, "(?i)baltimore county") ~ "Baltimore County",  # Check this FIRST
+         str_detect(origin, "(?i)baltimore") ~ "Baltimore city",
+         str_detect(origin, "(?i)easton") ~ "Talbot County",
+         str_detect(origin, "(?i)frederick") ~ "Frederick County",
+         str_detect(origin, "(?i)Prince George's County") ~ "Prince George's County",
+         str_detect(origin, "(?i)Prince Georges County, Md.") ~ "Prince George's County",
+         str_detect(origin, "(?i)Seat Pleasant") ~ "Prince George's County",
+         str_detect(origin, "(?i)Cheltenham") ~ "Prince George's County",
+         str_detect(origin, "(?i)unknown") ~ "Unknown",
+         str_detect(origin, "(?i)Centreville") ~ "Queen Anne's County",
+         str_detect(origin, "(?i)church hill") ~ "Queen Anne's County",
+         str_detect(origin, "(?i)Salisbury") ~ "Wicomico County",
+         str_detect(origin, "(?i)Pocomoke") ~ "Worcester County",
+         str_detect(origin, "(?i)Anne Arrundel County") ~ "Anne Arundel County",
+         str_detect(origin, "(?i)Chaptico, St. Marys County, Md.") ~ "St. Marys County",
+         str_detect(origin, "(?i)Dunkirk, Md.") ~ "Calvert County",
+         str_detect(origin, "(?i)Elkton, Md.") ~ "Cecil County",
+        str_detect(origin, "(?i)Ellicott City MD") ~ "Howard County",
+        str_detect(origin, "(?i)Ellicott") ~ "Howard County",
+        str_detect(origin, "(?i)Harford County") ~ "Harford County",
+        str_detect(origin, "(?i)Illegible") ~ "Unknown",
+        str_detect(origin, "(?i)Jessup") ~ "Anne Arundel County", 
+        str_detect(origin, "(?i)oakland") ~ "Garrett County",
+        str_detect(origin, "(?i)Md. former residence Pocomoke, Md.") ~ "Worcester County",
+        # Counties explicitly mentioned
+         str_detect(origin, "(?i)prince george") ~ "Prince George's County",
+         str_detect(origin, "(?i)anne arr") ~ "Anne Arundel County",  # Catches misspelling
+         str_detect(origin, "(?i)harford county") ~ "Harford County",
+         str_detect(origin, "(?i)st\\.? mary") ~ "St. Mary's County",
+          # Non-Maryland locations
+         str_detect(origin, "(?i)(^va\\.?$|virginia|^w\\.? ?va|washington.*d\\.?c|^del|^dc$|florida|^woodbine|^alabama)") ~ "Outside Maryland",
+        str_detect(origin, "(?i)Not known") ~ "Unknown",
+        str_detect(origin, "(?i)N/A") ~ "Unknown",
+        str_detect(origin, "(?i)na") ~ "Unknown",
+        str_detect(origin, "(?i)pinna") ~ "Unknown",
+        str_detect(origin, "(?i)missing") ~ "Unknown",
+       # str_detect(origin, "Pinna former residence Jamestown, Md.") ~ "Stutsman County",#north dakota??
+          is.na(origin) ~ "Unknown",
+               TRUE ~ origin
+         )) |> 
+      mutate(county_origin = str_remove_all(county_origin, ", Md.")) 
+```
+
+
+```{r}
+dc |> 
+  count(county_origin) |> 
+  arrange(desc(n))
+
+
+```
+
+Map
+```{r}
+library(tidycensus)
+#subset the geometry
+map <- get_acs(geography = "county", 
+              variables = c(number_households = "B19001_001", median_income = "B19013_001"), 
+               state = "MD", 
+               year = 2020, geometry = TRUE) %>% 
+  mutate(NAME = str_remove_all(NAME, ", Maryland")) |> 
+  select(GEOID, NAME) |> 
+  distinct()
+
+#join geocoordinates with baltcity
+dc_map <- dc |>  
+ inner_join(map, by=c("county_origin"="NAME"))
+
+
+```
+
+```{r}
+dc_map <- dc_map |> 
+  st_as_sf() |> 
+  sf::st_transform(4326) |> 
+  add_count(county_origin, name = "county_count")
+```
+
+
+# Updated map
+```{r}
+# Use colorFactor for categorical data
+pal <- colorFactor(
+  palette = "viridis",  # or "Set1", "Dark2", etc for categories
+  domain = dc_map$county_count
+)
+# Create summary data
+summary_data <- dc_map %>%
+  count(county_origin) %>%
+  filter(county_origin %in% c("Maryland", "Unknown", "Outside Maryland"))
+
+# Create HTML table
+table_html <- paste0(
+  '<table style="background-color: white; padding: 10px; border: 2px solid gray;">',
+  '<tr><th style="text-align: left; padding: 5px;">Origin</th>',
+  '<th style="text-align: right; padding: 5px;">Count</th></tr>',
+  '<tr><td style="padding: 5px;">Maryland</td><td style="text-align: right; padding: 5px;">45</td></tr>',
+  '<tr><td style="padding: 5px;">Unknown</td><td style="text-align: right; padding: 5px;">25</td></tr>',
+  '<tr><td style="padding: 5px;">Outside Maryland</td><td style="text-align: right; padding: 5px;">7</td></tr>',
+  '</table>'
+)
+
+# Create headline
+headline_html <- paste0(
+  '<div style="background-color: white; padding: 10px; border: 2px solid #333; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3); text-align: center;">',
+  '<h3 style="margin: 0; color: #333;">Birth Places of Deceased Boys at Maryland Institutions</h2>',
+  '</div>'
+)
+
+leafMap <- leaflet(data = dc_map) %>%
+  addProviderTiles(providers$Esri.WorldStreetMap) %>%
+  addControl(html = headline_html, position = "topright") %>%  # or "topleft"
+  addPolygons(
+    color = ~pal(county_count),
+    weight = 2.5,
+    fillOpacity = 0.5,
+    label = ~paste0("Count of inmates from ", county_origin, ": ", county_count)
+  ) %>%
+  addControl(html = table_html, position = "bottomleft")
+
+leafMap
+saveWidget(leafMap, "inmates_map_nov_18.html")
+```
+
+
+#--------------------------NOTES BELOW -----------------------------------------
+#Categorize
+
+```{r}
+
+death_categories_summary <- death_categories |> 
+   mutate(cause = str_squish(str_remove_all(cause, "[[:punct:]]"))) |> 
+  mutate(category = case_when(
+         str_detect(cause, "(?i)tuberculosis") ~ "tuberculosis",
+         str_detect(cause, "(?i)pneumonia") ~ "pneumonia",
+         str_detect(cause, "(?i)typhoid") ~ "typhoid",
+         str_detect(cause, "(?i)asthma") ~ "asthma",
+         str_detect(cause, "(?i)tubercul|phthisis|pthisis|consumption") ~ "tuberculosis",
+      str_detect(cause, "(?i)meningitis") ~ "meningitis",
+      str_detect(cause, "(?i)peritonit") ~ "peritonitis",
+      str_detect(cause, "(?i)cardiac|heart failure|heart trouble|mitral") ~ "cardiac_issues",
+      str_detect(cause, "(?i)exhaustion") ~ "exhaustion",
+      str_detect(cause, "(?i)gastric.*ulcer|ulcer.*gastric") ~ "gastric_ulcer",
+        ## An online search shows oedema of lungs might be more closely associated with heart issues though
+        cause=="rage of Lungs" ~ "lung_disease",
+        #  cause=="Pulmonary Tuberculosis" ~ "tuberculosis",
+        #  cause=="Tuberculosis" ~ "tuberculosis",
+        #  cause=="Pulmonary tuberculosis" ~ "tuberculosis", 
+        #  cause=="Military tuberculosis" ~ "tuberculosis", 
+        #  cause=="General Tuberculosis" ~ "tuberculosis", 
+        #  cause=="Lobar Pneumonia" ~ "pneumonia",
+        #  cause=="Pneumonia" ~ "pneumonia",
+        #  cause=="Pneumonia Double so called" ~ "pneumonia",
+        #  cause=="Pneumonia Lobar" ~ "pneumonia",
+        #   cause=="Typhoid Fever" ~ "typhoid",
+        #  cause=="Typhoid fever" ~ "typhoid",
+        #  cause=="Typhoid, Contributory Peritonitus" ~ "typhoid",
+        #  cause=="Primary typhoid fever immediate perf" ~ "typhoid",
+        #  cause=="Primary: Typhoid fever" ~ "typhoid",
+        # cause=="Typhoid, contributory Cardiac Trouble" ~ "typhoid",
+        cause=="Encephalitis" ~ "encephalitis",
+        cause=="Asthma" ~ "asthma",
+        cause==" Asthma" ~ "asthma",
+        cause=="Tuberculosis & Asthma" ~ "asthma",
+        cause=="Tuberculosis, Contributory asthma or asthenia" ~ "asthma",
+        cause=="Pulmonary Phthisis" ~ "phthisis",
+        cause=="Pneumonia phthisis" ~ "phthisis",
+        cause=="Phthisis Pulmonalis" ~ "phthisis",
+        cause=="Phthisis 229" ~ "phthisis",
+        cause=="Phthisis" ~ "phthisis",
+        cause=="Primary: Phthisis 22a" ~ "phthisis",
+        cause==" Phthisis" ~ "phthisis",
+         cause==" Immediate: Asphyxia" ~ "asphyxia",
+        cause=="Consumption" ~ "consumption",
+        cause==" Consumption" ~ "consumption",
+        cause=="Consumption" ~ "consumption",
+        cause=="Consumption after Malaria" ~ "consumption",
+        cause=="Heart failure" ~ "heart_failure",
+        cause=="And Pneumonia & Heart Failure" ~ "heart_failure",
+        cause=="Heart Failure" ~ "heart_failure",
+        cause=="Immediate: 2 heart failure" ~ "heart_failure",
+        cause=="Immediate: Heart failure" ~ "heart_failure",
+        cause=="Pneumonia and Heart failure" ~ "heart_failure",
+        # cause=="Pulmonary Tuberculosis" ~ "tuberculosis",
+        # cause=="Lobar Pneumonia" ~ "pneumonia",
+        # cause=="Catarrhal Pneumonia" ~ "pneumonia",
+        # cause=="Pneumonia (Double so called)" ~ "pneumonia",
+        # cause=="Pneumonia (unsure second w" ~ "pneumonia",
+        # cause=="Pneumonia Lab" ~ "pneumonia",
+        # cause=="Pneumonia phthisis" ~ "pneumonia",
+        # cause=="Primary Pneumonia" ~"pneumonia",
+        # cause=="Primary: Pneumonia " ~ "pneumonia",
+        # cause=='"Pneumonic Phthisis", Heart Failure' ~ "pneumonia",
+        # cause==" pneumonia" ~ "pneumonia", 
+        # cause==" Pneumonia" ~ "pneumonia",
+        # cause==" Pnuemonia" ~ "pneumonia", 
+        # cause=="Pneumonia " ~ "pneumonia", 
+        # cause==" Pneumonia " ~ "pneumonia", 
+        # cause=="Pneumonia" ~ "pneumonia",
+        cause==" Asthenia" ~ "asthenia",
+        cause==" Immediate: Asthenia" ~ "asthenia",
+        cause==" asthenia" ~ "asthenia",
+        cause=="Asthenia (27)" ~ "asthenia",
+        cause=="Don't know, Stomack inflama   lungs congested" ~ "lung_disease",
+        cause=="Oedema of Lungs" ~ "lung_disease",
+        cause=="Hem" ~ "hemorrhage",
+        cause=="rhage" ~ "hemorrhage",
+        cause=="Hemm" ~ "hemorrhage",
+        cause=="y Hemm" ~ "hemorrhage",
+        cause=="wound of groin by hog, hem" ~ "hemorrhage",
+        cause=="Influenza" ~ "Influenza",
+         is.na(cause) ~ "No_details",
+         TRUE ~ cause
+         )) |> 
+   filter(if_any(everything(), ~!is.na(.))) |> 
+  group_by(category) |> 
+  summarize(total=sum(n)) |> 
+  arrange(desc(total))
+
+
+```
+

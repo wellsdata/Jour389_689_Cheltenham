@@ -1,0 +1,129 @@
+---
+title: "master_with_new_deaths"
+author: "Zaka Hossain"
+date: "2025-11-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is my attempt at:
+1. Loading both datasets
+2. Aligning column structures from new_recorded_deaths to match master index format
+3. Joining the tables
+4. Identifying any duplicates or issues
+Not exactly in that order.
+
+My memo: https://docs.google.com/document/d/1cDevx-di4XksnXoyi5OYhV8mA47_MiHQMpNRDPVCGOc/edit?usp=sharing
+
+```{r}
+library(tidyverse)
+library(readr)
+library(lubridate)
+```
+
+```{r}
+
+
+library(googlesheets4)
+
+gs4_deauth()  
+new_deaths <- read_sheet("https://docs.google.com/spreadsheets/d/1LRSjhsrW1BJ2nKj78lGHR0C_8dxiaGhQFE2pzwSghx8/edit?usp=sharing", sheet = "new_recorded_deaths") |> 
+     clean_names()
+
+master_index <- read_sheet("https://docs.google.com/spreadsheets/d/1LRSjhsrW1BJ2nKj78lGHR0C_8dxiaGhQFE2pzwSghx8/edit?usp=sharing", sheet="master_index_nov23", col_types = "c") |>  # Read all columns as character
+  clean_names()
+
+deaths_no_dc <- read_sheet("https://docs.google.com/spreadsheets/d/1LRSjhsrW1BJ2nKj78lGHR0C_8dxiaGhQFE2pzwSghx8/edit?usp=sharing", sheet="Deaths without DC or newspaper",  col_types = "c") |> 
+  clean_names() |> 
+  slice(-c(15))
+
+```
+
+```{r}
+glimpse(master_index)
+```
+
+```{r}
+new_deaths_aligned <- deaths_no_dc |> 
+  rename(approx_age = age, death_date = date_of_death, hometown = from, birth_date = birthday)
+```
+
+# fix dates
+```{r}
+
+new_deaths_aligned  <- new_deaths_aligned  |> 
+  mutate(
+    birth_date_new = dmy(birth_date),
+    # For entries where dmy() failed, try parsing as just a year
+    birth_date_new = if_else(
+      is.na(birth_date_new) & !is.na(birth_date),
+      ymd(paste0(birth_date, "-01-01")),  # Set to January 1st of that year
+      birth_date_new
+    )
+  ) |> 
+   mutate(
+    death_date_new = ymd(death_date),
+    # For entries where dmy() failed, try parsing as just a year
+   death_date_new = if_else(
+      is.na(death_date_new) & !is.na(death_date),
+      ymd(paste0(death_date, "-01-01")),  # Set to January 1st of that year
+      death_date_new
+    )
+  )
+```
+
+
+
+
+```{r}
+glimpse(new_deaths_aligned)
+```
+
+# Checking for name matches (if any)
+
+```{r}
+potential_duplicates <- new_deaths_aligned %>%
+  mutate(name_clean = str_to_lower(str_trim(name))) %>%
+  inner_join(
+    master_index %>% 
+      mutate(name_clean = str_to_lower(str_trim(name))),
+    by = "name_clean")
+```
+
+Matthew Bloe duplicate - delete from master
+
+#Assign Id numbers
+
+```{r assign-ids}
+new_deaths_aligned <- new_deaths_aligned %>%
+  mutate(personal_id = as.character(row_number() + 162))
+```
+
+
+# join dfs
+```{r}
+
+
+
+```
+
+
+
+
+
+```{r}
+# Combine master index with new deaths
+combined_data <- bind_rows(master_index, new_deaths_aligned)
+```
+
+#write to disk
+
+```{r}
+
+write_csv(combined_data, "master_index_nov23.csv")
+
+```
+

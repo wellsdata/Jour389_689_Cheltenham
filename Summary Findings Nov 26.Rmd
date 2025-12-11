@@ -1,0 +1,452 @@
+---
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# title: "Summary Findings"
+# author: "Wells and Jour 772 Class"
+# date: "2025-11-30"
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r include=FALSE}
+# install.packages("htmlwidgets")
+# install.packages("leaflet")
+#install.packages("sf")
+#install.packages('DT')
+#install.packages("formattable")
+library(DT)
+library(tidyverse)
+library(rio)
+library(janitor)
+library(htmlwidgets)
+library(leaflet)
+library(sf)
+library(googlesheets4)
+library(formattable)
+```
+
+<center>
+
+### NOT FOR PUBLICATION: DEC 9 2025 DRAFT 
+
+# Death Certificates of Cheltenham, Jessup, Hickey Youth
+
+**Analysis by Capital News Service: **
+
+**Nicole Ramos, Akira Kyles, Brandyn Fragosa, Zaka Hossain, Raphael Romero Ruiz, David Landerman, Sophia Hernandez-Pina, Rob Wells**
+
+### NOT FOR PUBLICATION: DEC 9 2025 DRAFT 
+### NOT FOR PUBLICATION: DEC 9 2025 DRAFT 
+
+<center>
+
+<img src="images/Cheltenham_2025-11-25 10.29.24_Wells_.jpg" width="500" height="500"/>
+
+</center>
+
+
+```{r echo=FALSE}
+htmltools::HTML('
+<div style="background-color: #f8f9fa; padding: 20px; border: 2px solid #333; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); margin: 20px 0;">
+  <p style="margin: 0; color: #333; line-height: 1.6;">
+    <strong>There are an estimated 300 deaths at Cheltenham, according to Sen. William Smith (D-Montgomery County).</strong> This CNS analysis represents 177 documented cases from three institutions: 142 deaths of boys and young men at Cheltenham, 34 at Jessup and 1 at Hickey. Based on investigations about the treatment of the boys, the medical conditions cited on the death certificates may not be accurate.
+  </p>
+</div>
+')
+```
+
+### Sample death certificate
+
+<img src="images/Ames Jr, Fred.jpg" width="500" height="500"/>
+
+## Processed through Google Gemini AI
+
+<img src="images/ames_post_ai.png" width="500" height="500"/>
+
+
+
+```{r include=FALSE}
+#Import Extracted Death Certificate Data
+
+dc <- read_csv("https://raw.githubusercontent.com/wellsdata/Cheltenham/refs/heads/main/input/master_dc_data_dec_8.csv")
+
+
+dc <- dc %>%
+  mutate(primary_death = if_else(personal_id == 211, 
+                                  "Pulmonary Tuberculosis", 
+                                  primary_death))
+
+
+```
+
+## Statistics
+
+**Age 16 is the median age of death.**
+
+```{r echo=FALSE}
+summary(dc$age, NA.rm=true)
+
+# Two infants died at birth at Jessup, being the youngest. The youngest died at about age 9 and the oldest at age 21. The average age was 15.6 years and the median was age 16
+```
+
+
+
+## Deaths by Institution
+
+```{r echo=FALSE}
+dc |> 
+  mutate(facility = str_to_sentence(facility)) |> 
+  count(facility) |> 
+  arrange(desc(n)) |> 
+  rename(Facility = facility, Total = n) |> 
+datatable(caption = "Total Deaths by Institution",
+          options = list(
+            pageLength = 5,
+              dom = 't' ))
+# An estimated 300 deaths at Cheltenham, according to Sen. Smith. This data represents 177 documented cases from three institutions
+```
+
+
+## Graph of age
+
+```{r echo=FALSE}
+dc |> 
+  filter(age!="NA") |> 
+  group_by(age) |> 
+  summarise(total = n()) |> 
+ggplot(aes(x = age, y = total, fill = total)) +
+  geom_col(position = "dodge") +
+  theme(legend.position = "none") +
+  scale_x_continuous(breaks=c(9:21)) +
+  labs(title = "Ages of Cheltenham, Jessup youth deaths",
+       subtitle = "From 1877-1941, Approximate Ages",
+       caption = "n=177. Graphic by Rob Wells, 12-5-2025",
+       y="Number",
+       x="Approximate Ages")
+
+
+```
+
+## Distribution of Cases
+```{r echo=FALSE}
+
+dc |> 
+  mutate(death_year = year(death_date),
+         death_decade = floor(death_year / 10) * 10) |> 
+  group_by(death_year) |> 
+  count() |> 
+ggplot(aes(x = death_year, y = n, fill = n)) +
+  geom_col(position = "dodge") +
+  theme(legend.position = "none") +
+  scale_x_continuous(breaks= seq(1870,1950, 5)) +
+  labs(title = "Total Documented Cheltenham, Jessup, Hickey Youth deaths",
+       subtitle = "From 1877-1941",
+       caption = "n=177**. Graphic by Rob Wells, 12-8-2025",
+       y="",
+       x="death_year")
+
+```
+
+
+
+
+## Race of the boys
+
+```{r echo=FALSE}
+
+
+dc |> 
+   mutate(race_color = case_when(
+     is.na(color_or_race) ~ "No Data", 
+     TRUE ~ color_or_race)
+         ) |> 
+  count(race_color) |> 
+  mutate(pct = formattable::percent(n/sum(n), digits=0)) |>
+   ggplot(aes(x = reorder(race_color, -n), y = n, fill =n))+
+  geom_col(position = "dodge") +
+  theme(legend.position = "none") +
+  scale_y_continuous(limits=c(0,170)) +
+  geom_text(aes(label = (n)), size = 4, vjust = -.5) +
+  labs(title = "Race of Cheltenham, Jessup youth deaths",
+       subtitle = "From 1880-1939, Approximate Ages",
+       caption = "n=172. Graphic by Rob Wells, 11-30-2023",
+       y="Number",
+       x="Race")
+
+
+
+```
+
+## Primary Causes of Death
+
+```{r include=FALSE}
+summary_death <- read_csv("output/primary_death_categories_summary_dec9.csv") |> 
+  rename(category = cause) |> 
+ mutate(category = str_to_sentence(category)) |> 
+  filter(!category =="No_details")
+```  
+
+```{r echo=FALSE}
+datatable(summary_death,
+          caption = "Primary Causes of Death, Cheltenham, Jessup, Hickey 1877-1941",
+          options = list(pageLength = 10))
+
+```
+
+## Occupations of Boys
+
+```{r echo=FALSE}
+
+jobs <- dc |>
+  mutate(occupation_category = case_when(
+    # Institutional/Incarcerated
+    occupation %in% c("inmate", "Inmate", "prisoner", "house of reformation", 
+                      "in reformatory", "illegible; shop at reformatory") ~ "incarcerated",
+    
+    # Manufacturing/Factory
+    occupation %in% c("factory", "Factory", "Cannery", "shop") ~ "manufacturing",
+    
+        occupation %in% c("chair factory", "caning chairs", 
+                      "Broom shop", "broom maker") ~ "broom_chair_shop",
+    
+    # Unskilled Labor
+    occupation %in% c("Laborer", "laborer",
+                      "Day Laborer", "General Labor", "Laborer Mining") ~ "unskilled_ labor",
+        # Farm
+    occupation %in% c("Farm Laborer", "farm worker") ~ "farm_ labor",
+    
+    # Service Work
+    occupation %in% c("Laundry", "laundry boy", "house boy", "waiter", 
+                      "Barber", "boot black") ~ "service_work",
+    
+    # Student/School
+    occupation %in% c("student", "school") ~ "student",
+    
+    # Missing/Unknown
+    occupation %in% c("none", "no_details", "no_entry", "Unknown", 
+                      "illegible", NA) ~ "missing_unknown",
+    
+    TRUE ~ "Other"
+  )) |> 
+  mutate(occupation_category = str_to_sentence(occupation_category))
+
+
+
+
+```
+
+
+
+```{r echo=FALSE}
+jobs_table <- jobs |> 
+  group_by(occupation_category) |> 
+  count(occupation_category) |> 
+  arrange(desc(n)) |> 
+  datatable(caption = "Occupations of Cheltenham, Jessup Boys, 1877-1941",
+          options = list(pageLength = 10))
+
+
+
+saveWidget(jobs_table, "images/jobs_table.html", selfcontained = TRUE)
+
+jobs_table
+#embed into wordpress: <iframe seamless src="https://github.com/wellsdata/Cheltenham/blob/main/images/jobs_table.html" width="100%" height="500px"></iframe>
+```
+
+
+
+## Boys and Causes of Death
+```{r echo=FALSE}
+
+dc |>
+  rename(Age = age, Death_Date = death_date, Name = name, Cause = cause_of_death, Race = color_or_race, Facility = facility) |>
+  select(Name, Age, Cause, Death_Date, Race, Facility) |>
+  arrange(Death_Date) |>
+  datatable(
+    caption = htmltools::tags$caption(
+      style = "caption-side: top; text-align: center; width: 100%;",
+      htmltools::tags$h2("Names Deceased Boys Cheltenham, Jessup, Hickey, 1877-1941", 
+                        style = "margin: 0 0 10px 0;"),
+      htmltools::tags$h3("Note: Death certificates often lacked age, other details", 
+                        style = "margin: 0; font-weight: normal; color: #666;")
+    ),
+    options = list(
+      pageLength = 25,
+      dom = 'ftip'
+    )
+  ) |>
+  formatStyle(columns = 0:6, `text-align` = 'left')
+```
+
+
+<br>
+
+## All Causes of Death
+
+**A summary of all causes of death, primary and secondary, written on the death certificates**
+
+<br>
+
+<center>
+
+<img src="images/all_category_summary_dec_9.png" width="1000" height="500"/>
+
+</center>
+
+<br>
+**Decade breakdown all causes of death, primary and secondary**
+
+<br>
+
+<center>
+
+<img src="images/faceted_causes_of_death_dec_9.png" width="1000" height="500"/>
+
+</center>
+
+<br>
+<br>
+**Infectious diseases all causes of death, primary and secondary**
+<br>
+<img src="images/infectious_disease_deaths_dec_9.png" width="1000" height="500"/>
+
+
+<br>
+<br>
+
+## Origins of the boys
+```{r include=FALSE}
+dc <- dc |> 
+  mutate(origin = str_squish(birth_place)) |> 
+  mutate(county_origin = case_when(
+         str_detect(origin, "(?i)^md\\.?$") ~ "Maryland", 
+         str_detect(origin, "(?i)baltimore county") ~ "Baltimore County",  # Check this FIRST
+         str_detect(origin, "(?i)baltimore") ~ "Baltimore city",
+         str_detect(origin, "(?i)easton") ~ "Talbot County",
+         str_detect(origin, "(?i)frederick") ~ "Frederick County",
+         str_detect(origin, "(?i)Prince George's County") ~ "Prince George's County",
+         str_detect(origin, "(?i)Prince Georges County, Md.") ~ "Prince George's County",
+         str_detect(origin, "(?i)Seat Pleasant") ~ "Prince George's County",
+         str_detect(origin, "(?i)Cheltenham") ~ "Prince George's County",
+         str_detect(origin, "(?i)unknown") ~ "Unknown",
+         str_detect(origin, "(?i)Centreville") ~ "Queen Anne's County",
+         str_detect(origin, "(?i)church hill") ~ "Queen Anne's County",
+         str_detect(origin, "(?i)Salisbury") ~ "Wicomico County",
+         str_detect(origin, "(?i)Pocomoke") ~ "Worcester County",
+         str_detect(origin, "(?i)Anne Arrundel County") ~ "Anne Arundel County",
+         str_detect(origin, "(?i)Chaptico, St. Marys County, Md.") ~ "St. Mary's County",
+         str_detect(origin, "(?i)Dunkirk, Md.") ~ "Calvert County",
+         str_detect(origin, "(?i)Elkton, Md.") ~ "Cecil County",
+        str_detect(origin, "(?i)Ellicott City MD") ~ "Howard County",
+        str_detect(origin, "(?i)Ellicott") ~ "Howard County",
+        str_detect(origin, "(?i)Harford County") ~ "Harford County",
+        str_detect(origin, "(?i)Illegible") ~ "Unknown",
+        str_detect(origin, "(?i)Jessup") ~ "Anne Arundel County", 
+        str_detect(origin, "(?i)oakland") ~ "Garrett County",
+        str_detect(origin, "(?i)Md. former residence Pocomoke, Md.") ~ "Worcester County",
+        # Counties explicitly mentioned
+         str_detect(origin, "(?i)prince george") ~ "Prince George's County",
+         str_detect(origin, "(?i)anne arr") ~ "Anne Arundel County",  # Catches misspelling
+         str_detect(origin, "(?i)harford county") ~ "Harford County",
+         str_detect(origin, "(?i)chaptico") ~ "St. Mary's County",
+       # str_detect(origin, "St.Marys County") ~ "St. Mary's County",
+          # Non-Maryland locations
+         str_detect(origin, "(?i)(^va\\.?$|virginia|^w\\.? ?va|washington.*d\\.?c|^del|^dc$|florida|^woodbine|^alabama)") ~ "Outside Maryland",
+        str_detect(origin, "(?i)Not known") ~ "Unknown",
+        str_detect(origin, "(?i)N/A") ~ "Unknown",
+        str_detect(origin, "(?i)na") ~ "Unknown",
+        str_detect(origin, "(?i)pinna") ~ "Unknown",
+        str_detect(origin, "(?i)missing") ~ "Unknown",
+       str_detect(origin, "Pinna former residence Jamestown, Md.") ~ "Anne Arundel County",
+          is.na(origin) ~ "Unknown",
+               TRUE ~ origin
+         )) |> 
+      mutate(county_origin = str_remove_all(county_origin, ", Md.")) 
+```
+
+
+```{r include=FALSE}
+library(tidycensus)
+#subset the geometry
+map <- get_acs(geography = "county", 
+              variables = c(number_households = "B19001_001", median_income = "B19013_001"), 
+               state = "MD", 
+               year = 2020, geometry = TRUE) %>% 
+  mutate(NAME = str_remove_all(NAME, ", Maryland")) |> 
+  select(GEOID, NAME) |> 
+  distinct()
+
+#join geocoordinates with baltcity
+dc_map <- dc |>  
+ inner_join(map, by=c("county_origin"="NAME"))
+
+
+
+
+dc_map <- dc_map |> 
+  st_as_sf() |> 
+  sf::st_transform(4326) |> 
+  add_count(county_origin, name = "county_count")
+```
+
+
+```{r echo=FALSE}
+# Use colorBin for better visual differentiation with distinct breaks
+pal <- colorBin(
+  palette = c("#FFEDA0", "#FED976", "#FEB24C", "#FD8D3C", "#FC4E2A", "#E31A1C", "#BD0026", "#800026"),  # More vibrant orange-red gradient
+  domain = dc_map$county_count,
+  bins = c(0, 1, 2, 3, 5, 8, 12, 20, Inf),  # Custom bins for better differentiation
+  na.color = "transparent"
+)
+
+# Count unknowns for legend
+unknown_count <- sum(dc$county_origin == "Unknown", na.rm = TRUE)
+outside_md_count <- sum(dc$county_origin == "Outside Maryland", na.rm = TRUE)
+
+# Create HTML table with actual counts
+table_html <- paste0(
+  '<table style="background-color: white; padding: 10px; border: 2px solid gray;">',
+  '<tr><th style="text-align: left; padding: 5px;">Origin</th>',
+  '<th style="text-align: right; padding: 5px;">Count</th></tr>',
+  '<tr><td style="padding: 5px;">Unknown</td><td style="text-align: right; padding: 5px;">', unknown_count, '</td></tr>',
+  '<tr><td style="padding: 5px;">Outside Maryland</td><td style="text-align: right; padding: 5px;">', outside_md_count, '</td></tr>',
+  '</table>'
+)
+
+# Create headline
+headline_html <- paste0(
+  '<div style="background-color: white; padding: 10px; border: 2px solid #333; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.3); text-align: center;">',
+  '<h3 style="margin: 0; color: #333;">Birth Places of Deceased Boys at Maryland Institutions</h3>',
+   '<h4 style="margin: 5px 0 0 0; color: #666; font-weight: normal;">Based on limited data from death certificates</h4>',
+  '</div>'
+)
+
+leafMap <- leaflet(data = dc_map) %>%
+  addProviderTiles(providers$Esri.WorldStreetMap) %>%
+  addControl(html = headline_html, position = "topright") %>%
+  addPolygons(
+    fillColor = ~pal(county_count),
+    color = "black",  # Black borders
+    weight = 2,
+    fillOpacity = 0.7,
+    label = ~paste0("County: ", county_origin, " | Count: ", county_count)
+  ) %>%
+  # addLegend(
+  #   position = "bottomright",
+  #   pal = pal,
+  #   values = ~county_count,
+  #   title = "Number of Cases",
+  #   opacity = 0.7
+  # ) %>%
+  addControl(html = table_html, position = "bottomleft")
+
+leafMap
+saveWidget(leafMap, "inmates_map_nov_18.html")
+```
+
+
+### NOT FOR PUBLICATION: DEC 9 2025 DRAFT 
+### NOT FOR PUBLICATION: DEC 9 2025 DRAFT 

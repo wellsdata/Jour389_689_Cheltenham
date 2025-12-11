@@ -1,0 +1,410 @@
+---
+title: "Bigrams for Cheltenham Research"
+author: "Rob Wells"
+date: '2025-11-30'
+output: html_document
+---
+
+Update with student responses
+
+# Jour 772 Fall 2025:
+
+In this exercise, you will import the Article Data Extraction results and create bigrams from the comments
+The source is Cheltenham Article Data Extraction (Responses), 184 entries as of Nov 24.
+
+```{r}
+#load tidyverse, tidytext, rio,, janitor libraries
+
+library(tidyverse)
+library(tidytext)
+library(rio)
+library(janitor)
+library(googlesheets4)
+
+```
+
+# Load data - pull directly from spreadsheet
+```{r}
+#renamed important details to details for simplicity
+
+library(googlesheets4)
+
+gs4_deauth()  
+news <- read_sheet("https://docs.google.com/spreadsheets/d/1XFRMzN-xK1uQcvaEIOV7wuEPH6lYrvVpvgE3w6ngKPU/edit?usp=sharing", sheet = "Form Responses 1") |> 
+     clean_names() |> 
+  rename(details = important_details_from_article_about_the_victim_and_the_conditions_at_cheltenham_any_direct_quotes_need_to_have_quotation_marks)
+
+```
+
+# Tokenize one column
+
+```{r}
+
+stories <- str_replace_all(news$details, "- ", "")
+stories_df <- tibble(stories,)
+
+# unnest includes lower, punct removal
+
+stories_tokenized <- stories_df %>%
+  unnest_tokens(word,stories)
+
+stories_tokenized
+#A list of the common words
+```
+
+#List of top words, cleaned with stop words removed
+```{r}
+
+data(stop_words)
+
+stories_tokenized <- stories_tokenized %>%
+  anti_join(stop_words, by = c("word" = "word")) %>%
+  filter(word != "temp_file") %>%
+  filter(word != "stories_corpus") %>%
+  filter(!grepl('[0-9]', word))
+
+# Word Count of top words
+
+word_count <- stories_tokenized %>%
+  count(word, sort=TRUE)
+
+
+```
+
+# Bigrams without stop words
+
+```{r}
+bigrams <- stories_df %>%
+  unnest_tokens(bigram, stories, token="ngrams", n=2) |> 
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+count_bigrams <- bigrams %>%
+  count(word1, word2, sort = TRUE)
+
+
+```
+
+# Bigrams with stop words
+
+```{r}
+bigrams_clean <-stories_df %>%
+  unnest_tokens(bigram, stories, token="ngrams", n=2) |> 
+  separate(bigram, c("word1", "word2"), sep = " ") |> 
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) |> 
+  filter(!is.na(word1) | !is.na(word2))
+
+count_clean_bigrams <- bigrams_clean  %>%
+  count(word1, word2, sort = TRUE)
+
+
+```
+
+# Next steps: Categorize the material
+Category "origins" = how the boys arrived -- sentenced, committed etc
+"labor" - working on a farm, broom factory anything involving their work
+"boy offenses" = specifies crimes the boys committed to get sentenced to Cheltenham
+"investigations" = grand jury or newspaper investigations of Cheltenham
+"abuse" = details of abuse, whippings, pubishment, no shoes, 
+"medical" = discussing medical conditions
+
+Examine the bigrams and top words and on the categories below
+
+Sophie:
+Origins now includes: sentenced, committed, convicted and arrested. 
+Labor contains labor, farm, broom, factory. 
+boy_offenses is made up of larceny, theft, stealing and robbery. 
+Treatment is condictions, living, housing and facilities. 
+Abuse is comprised of beaten, abused, injured, hurt and violence.
+Escape: escape, fled and ran away.
+Death: died, death and killed. And finally, education is made up of school, education, and teaching. 
+
+
+
+```{r}
+news <- news |> 
+  mutate(details_clean = str_squish(str_remove_all(details, "[[:punct:]]"))) |> 
+  mutate(category = paste(
+    #akira and brandyn
+    if_else(str_detect(details_clean, "(?i)charged"), "origins", NA_character_),
+    if_else(str_detect(details_clean, "(?i)beating"), "abuse", NA_character_),
+    # if_else(str_detect(details_clean, "(?i)paroled"), "labor", NA_character_),
+    if_else(str_detect(details_clean, "(?i)ragged"), "abuse", NA_character_),
+    if_else(str_detect(details_clean, "(?i)incorrigible"), "boy_offenses", NA_character_),
+    if_else(str_detect(details_clean, "(?i)manslaughter"), "boy_offense", NA_character_),
+    if_else(str_detect(details_clean, "(?i)lawsuit"), "investigations", NA_character_),
+    if_else(str_detect(details_clean, "(?i)barefoot"), "abuse", NA_character_),
+    #david and sophie
+      if_else(str_detect(details_clean, "(?i)sentenced|committed|convicted|arrested"), "origins", NA_character_),
+    if_else(str_detect(details_clean, "(?i)labor|farm|broom|factory"), "labor", NA_character_),
+    if_else(str_detect(details_clean, "(?i)larceny|theft|stealing|robbery"), "boy_offenses", NA_character_),
+    if_else(str_detect(details_clean, "(?i)conditions|living|housing|facilities"), "treatment", NA_character_),
+    if_else(str_detect(details_clean, "(?i)jury|trial|court|investigation"), "investigations", NA_character_),
+    if_else(str_detect(details_clean, "(?i)beaten|abused|injured|hurt|violence"), "abuse", NA_character_),
+    # NEW CATEGORIES BELOW
+    if_else(str_detect(details_clean, "(?i)escape|fled|ran away"), "escape", NA_character_),
+    if_else(str_detect(details_clean, "(?i)died|death|killed"), "death", NA_character_),
+    if_else(str_detect(details_clean, "(?i)school|education|teaching"), "education", NA_character_),
+         # NEW PATTERNS ADDED BY NICOLE, BEX, RAPHAEL:
+    if_else(str_detect(details_clean, "(?i)whip|(?i)whipped|(?i)whipping"), "abuse", NA_character_),
+    if_else(str_detect(details_clean, "(?i)punish|(?i)punishment"), "abuse", NA_character_),
+    if_else(str_detect(details_clean, "(?i)cruel|(?i)cruelty"), "abuse", NA_character_),
+    if_else(str_detect(details_clean, "(?i)torture|(?i)tortured"), "abuse", NA_character_),
+    if_else(str_detect(details_clean, "(?i)neglect|(?i)neglected"), "neglect", NA_character_),
+    if_else(str_detect(details_clean, "(?i)starv|(?i)malnourish|(?i)malnourished"), "neglect", NA_character_),
+    if_else(str_detect(details_clean, "(?i)unsanitary|(?i)filth|(?i)filthy"), "neglect", NA_character_),
+    if_else(str_detect(details_clean, "(?i)sick|(?i)illness|(?i)ill"), "medical", NA_character_),
+    if_else(str_detect(details_clean, "(?i)hospital|(?i)doctor|(?i)physician"), "medical", NA_character_),
+    if_else(str_detect(details_clean, "(?i)injury|(?i)injured|(?i)wound"), "medical", NA_character_),
+    if_else(str_detect(details_clean, "(?i)disease|(?i)fever"), "medical", NA_character_),
+    if_else(str_detect(details_clean, "(?i)escape|(?i)escaped"), "escape", NA_character_),
+    if_else(str_detect(details_clean, "(?i)died|(?i)death|(?i)deceased"), "death", NA_character_),
+    if_else(str_detect(details_clean, "(?i)fatal|(?i)killed"), "death", NA_character_),
+    if_else(str_detect(details_clean, "(?i)sends|(?i)sent to"), "origins", NA_character_),
+    if_else(str_detect(details_clean, "(?i)charged"), "boy_offenses", NA_character_),
+    if_else(str_detect(details_clean, "(?i)incorrigible|(?i)incorrigibility"), "boy_offenses", NA_character_),
+    if_else(str_detect(details_clean, "(?i)beat"), "abuse", NA_character_),
+    if_else(str_detect(details_clean, "(?i)committee"), "investigation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)parole|(?i)paroled"), "labor", NA_character_),
+    if_else(str_detect(details_clean, "(?i)indicted"), "boy_offenses", NA_character_),
+    if_else(str_detect(details_clean, "(?i)flogging"), "abuse", NA_character_),
+    if_else(str_detect(details_clean, "(?i)orphans|(?i)orphan"), "origins", NA_character_),
+    if_else(str_detect(details_clean, "(?i)superintendent|(?i)guard|(?i)guards|(?i)teacher|(?i)teachers"), "leadership", NA_character_),
+    if_else(str_detect(details_clean, "(?i)Pyles|(?i)leadership"), "leadership", NA_character_),
+    if_else(str_detect(details_clean, "(?i)Dorsey"), "leadership", NA_character_),
+    if_else(str_detect(details_clean, "(?i)club|(?i)clubbed|(?i)clubbing"), "abuse", NA_character_),
+    if_else(str_detect(details_clean, "(?i)ran away|(?i)runaway|(?i) runaways|(?i)fled"), "escape", NA_character_),
+    sep = "; "
+  )) |> 
+  mutate(category = str_remove_all(category, "NA; |; NA")) |> 
+  mutate(category = na_if(category, "NA"))
+```
+
+
+
+```{r}
+news |> 
+  count(category) |> 
+  arrange(desc(n))
+```
+
+
+
+
+# Next steps: Team up:
+Akira, Brandyn
+Nicole, Bex, Raphael
+Sophie, David, Zaka
+
+1) bigrams and word count on  "elaborate_on_the_quality_of_the_journalism_sourcing_graphics_photos_interviews"; "notes_on_neglect_or_abuse"; "notes_anything_else_thats_noteworthy"     
+
+2) add to the catgory code above -- be specific on what you are adding so I can merge it into the master code block
+
+
+
+3) Start on the death certificate reponses
+
+https://docs.google.com/spreadsheets/d/13CthhhfLHiPZqr1P67SCa9BVUyb5Rl6OBhUwvqawDEk/edit?usp=sharing
+"Notes for anything of interest"
+
+#I used the code to create a data frame and renamed the notes for anything of interest into details so that the title is not drawn out.
+
+```{r}
+gs4_deauth()  
+DC_Responses <- read_sheet("https://docs.google.com/spreadsheets/d/13CthhhfLHiPZqr1P67SCa9BVUyb5Rl6OBhUwvqawDEk/edit?usp=sharing", sheet = "Form Responses 1") |> 
+     clean_names() |> 
+  rename(details = notes_for_anything_of_interest)
+```
+
+#This code tokenizes the data frame, and unnests it which includes lower case words and removes punctuation. I then make a list of common words.
+```{r}
+DC_writing <- str_replace_all(DC_Responses$details, "- ", "")
+DC_writing_df <- tibble(DC_writing,)
+
+DC_writing_tokenized <- DC_writing_df %>%
+  unnest_tokens(word,DC_writing)
+
+DC_writing_tokenized
+```
+
+##The code makes a list of top words, cleaned with stop words removed.
+```{r}
+data(stop_words)
+
+DC_writing_tokenized <- DC_writing_tokenized %>%
+  anti_join(stop_words, by = c("word" = "word")) %>%
+  filter(word != "temp_file") %>%
+  filter(word != "DC_writing_corpus") %>%
+  filter(!grepl('[0-9]', word))
+
+word_count <- DC_writing_tokenized %>%
+  count(word, sort=TRUE)
+```
+
+#The code creates a DC bigrams data frame without stop words.
+```{r}
+DC_bigrams <- DC_writing_df %>%
+  unnest_tokens(bigram, DC_writing, token="ngrams", n=2) |> 
+  separate(bigram, c("word1", "word2"), sep = " ")
+
+DC_count_bigrams <- DC_bigrams %>%
+  count(word1, word2, sort = TRUE)
+```
+
+#The code includes stop words in the DC bigrams data frame.
+```{r}
+DC_bigrams_clean <-DC_writing_df %>%
+  unnest_tokens(DC_bigram, DC_writing, token="ngrams", n=2) |> 
+  separate(DC_bigram, c("word1", "word2"), sep = " ") |> 
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) |> 
+  filter(!is.na(word1) | !is.na(word2))
+
+DC_count_clean_bigrams <- DC_bigrams_clean  %>%
+  count(word1, word2, sort = TRUE)
+```
+
+## Here, I categorized the material by occupation, medical code and diagnosis, since those were the most common themes I saw when reading through the cleaned DC bigrams data frame.
+```{r}
+DC_Responses <- DC_Responses |> 
+  mutate(details_clean = str_squish(str_remove_all(details, "[[:punct:]]"))) |> 
+  mutate(category = paste(
+    if_else(str_detect(details_clean, "(?i)inmate"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)caning"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)cain"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)chair"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)28"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)27"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)137"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)factory"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)1"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)0001"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)01441"), "medicial_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)03949"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)103"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)117"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)119"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)13147"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)132"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)134"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)13258"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)135"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)137"), "medicial_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)139"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)167"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)30775"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)3124"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)3506"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)53"), "medicial_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)61311"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)79"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)9103"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)93"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)119"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)31308"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)61311"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)243"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)120"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)laundry"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)farmer"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)helper"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)243"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)6102"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)influenza"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)consumption"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)encephalitis"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)phthisis"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)failure"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)heart"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)tuberculosis"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)premature"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)sick"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)hemorrhage"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)pneumonia"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)disease"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)malaria"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)diagnosis"), "diagnosis", NA_character_),
+    sep = "; "
+  )) |> 
+  mutate(category = str_remove_all(category, "NA; |; NA")) |> 
+  mutate(category = na_if(category, "NA"))
+```
+
+#The code includes stop words in the DC bigrams data frame.
+```{r}
+DC_bigrams_clean <-DC_writing_df %>%
+  unnest_tokens(DC_bigram, DC_writing, token="ngrams", n=2) |> 
+  separate(DC_bigram, c("word1", "word2"), sep = " ") |> 
+  filter(!word1 %in% stop_words$word) %>%
+  filter(!word2 %in% stop_words$word) |> 
+  filter(!is.na(word1) | !is.na(word2))
+
+DC_count_clean_bigrams <- DC_bigrams_clean  %>%
+  count(word1, word2, sort = TRUE)
+```
+
+## Here, I categorized the material by occupation, medical code and diagnosis, since those were the most common themes I saw when reading through the cleaned DC bigrams data frame.
+```{r}
+DC_Responses <- DC_Responses |> 
+  mutate(details_clean = str_squish(str_remove_all(details, "[[:punct:]]"))) |> 
+  mutate(category = paste(
+    if_else(str_detect(details_clean, "(?i)inmate"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)caning"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)cain"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)chair"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)28"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)27"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)137"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)factory"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)1"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)0001"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)01441"), "medicial_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)03949"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)103"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)117"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)119"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)13147"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)132"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)134"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)13258"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)135"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)137"), "medicial_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)139"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)167"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)30775"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)3124"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)3506"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)53"), "medicial_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)61311"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)79"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)9103"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)93"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)119"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)31308"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)61311"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)243"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)120"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)laundry"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)farmer"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)helper"), "occupation", NA_character_),
+    if_else(str_detect(details_clean, "(?i)243"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)6102"), "medical_code", NA_character_),
+    if_else(str_detect(details_clean, "(?i)influenza"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)consumption"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)encephalitis"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)phthisis"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)failure"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)heart"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)tuberculosis"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)premature"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)sick"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)hemorrhage"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)pneumonia"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)disease"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)malaria"), "diagnosis", NA_character_),
+    if_else(str_detect(details_clean, "(?i)diagnosis"), "diagnosis", NA_character_),
+    sep = "; "
+  )) |> 
+  mutate(category = str_remove_all(category, "NA; |; NA")) |> 
+  mutate(category = na_if(category, "NA"))
+```

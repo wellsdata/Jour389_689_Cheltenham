@@ -1,0 +1,73 @@
+Fields,Results
+Registration Dist. No.,240
+1 PLACE OF DEATH County,Prince George's
+1 PLACE OF DEATH Village or City,Cheltenham
+1 PLACE OF DEATH (No.),
+1 PLACE OF DEATH St.,
+1 PLACE OF DEATH Ward,
+1 PLACE OF DEATH (if death occurred in a hospital or institution, give its NAME instead of street and number.),
+2 FULL NAME,Stephen Williams
+3 SEX,Male
+4 COLOR OR RACE,Black
+5 SINGLE, MARRIED, WIDOWED OR DIVORCED (Write the word),Single
+6 DATE OF BIRTH (Month),July
+6 DATE OF BIRTH (Day),12
+6 DATE OF BIRTH (Year),1906
+7 AGE (yrs),17
+7 AGE (mos),3
+7 AGE (ds),25
+7 AGE IF LESS than 1 day (hrs),
+7 AGE IF LESS than 1 day (min),
+8 OCCUPATION (a) Trade, profession or particular kind of work,Inmate House of
+8 OCCUPATION (b) General nature of industry, business, or establishment in which employed or (employer),Reformation
+9 BIRTHPLACE (State or country),Maryland
+10 NAME OF FATHER,George Williams
+11 BIRTHPLACE OF FATHER (State or country),Maryland
+12 MAIDEN NAME OF MOTHER,Unknown
+13 BIRTHPLACE OF MOTHER (State or country),
+14 THE ABOVE IS TRUE TO THE BEST OF MY KNOWLEDGE (Informant),John D. Snyder
+14 THE ABOVE IS TRUE TO THE BEST OF MY KNOWLEDGE (Address),Cheltenham Md.
+15 Filed (Month),Nov.
+15 Filed (Day),7th
+15 Filed (Year),1923
+15 Registrar,Julius H. Smith
+16 DATE OF DEATH (Month),November
+16 DATE OF DEATH (Day),Sixth
+16 DATE OF DEATH (Year),1923
+17 I HEREBY CERTIFY, That I attended the deceased from (Month),August
+17 I HEREBY CERTIFY, That I attended the deceased from (Day),
+17 I HEREBY CERTIFY, That I attended the deceased from (Year),1923
+17 I HEREBY CERTIFY, That I attended the deceased to (Month),Nov.
+17 I HEREBY CERTIFY, That I attended the deceased to (Day),6
+17 I HEREBY CERTIFY, That I attended the deceased to (Year),1923
+17 that I last saw h____ alive on (Month),Nov.
+17 that I last saw h____ alive on (Day),4
+17 that I last saw h____ alive on (Year),1923
+17 and that death occurred on the date stated above, at,6-30 P.M.
+THE CAUSE OF DEATH was as follows:,Pulmonary Tuberculosis
+THE CAUSE OF DEATH (Duration yrs),
+THE CAUSE OF DEATH (Duration mos),
+THE CAUSE OF DEATH (Duration ds),
+Contributory Secondary,
+Contributory Secondary (Duration yrs),
+Contributory Secondary (Duration mos),
+Contributory Secondary (Duration ds),
+(Signed),William H. Gibbons
+M. D.,M. D.
+(Date below signature),Nov. 7, 1923
+(Address below signature),Grooms, Md.
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients, or Recent Residents) At place of death (yrs),2
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients, or Recent Residents) At place of death (mos),
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients, or Recent Residents) At place of death (da),
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients, or Recent Residents) In the State (yrs),
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients, or Recent Residents) In the State (mos),
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients, or Recent Residents) In the State (da),
+Where was disease contracted, if not at place of death?,
+Former or usual residence,
+19 PLACE OF BURIAL OR REMOVAL,Mt. Olivet Cemetery
+19 PLACE OF BURIAL OR REMOVAL (Address),Balto. Md.
+19 DATE OF BURIAL (Month),Nov.
+19 DATE OF BURIAL (Day),8th
+19 DATE OF BURIAL (Year),1923
+20 UNDERTAKER,Isaac L. Brown & Son
+20 UNDERTAKER (Address),Montgomery St. Balto. Md.

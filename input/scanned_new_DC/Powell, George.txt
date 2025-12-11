@@ -1,0 +1,67 @@
+Fields,Results
+1 PLACE OF DEATH County,Pr. George's
+1 PLACE OF DEATH Village or City,Cheltenham
+1 PLACE OF DEATH No.,House of Reformation
+1 PLACE OF DEATH Ward,
+2 FULL NAME,George Purcell
+3 SEX,Male
+4 COLOR OR RACE,Negro
+5 SINGLE, MARRIED, WIDOWED, OR DIVORCED (Write the word),Single
+6 DATE OF BIRTH Month,Oct.
+6 DATE OF BIRTH Day,17
+6 DATE OF BIRTH Year,1913
+7 AGE yrs.,18
+7 AGE mos.,9
+7 AGE ds.,23
+7 AGE hrs.,
+7 AGE min.,
+7 AGE IF LESS than 1 day hrs.,
+7 AGE IF LESS than 1 day min.,
+8 OCCUPATION (a) Trade, profession or particular kind of work,Inmate
+8 OCCUPATION (b) General nature of industry business, or establishment in which employed (or employer),House of Reformation
+9 BIRTHPLACE (State or country),Maryland
+10 NAME OF FATHER,James Purcell
+11 BIRTHPLACE OF FATHER (State or country),Maryland
+12 MAIDEN NAME OF MOTHER,unknown
+13 BIRTHPLACE OF MOTHER (State or country),
+14 THE ABOVE IS TRUE TO THE BEST OF MY KNOWLEDGE (Informant),John B. Pyles, Supt.
+14 THE ABOVE IS TRUE TO THE BEST OF MY KNOWLEDGE (Address),Cheltenham, Md.
+15 Filed,Aug. 10 1932
+15 Registrar,Julius R. Smith
+15 Local Registrar,
+STATE OF MARYLAND CERTIFICATE OF DEATH Registration Dist. No.,240
+15 DATE OF DEATH Month,Aug
+15 DATE OF DEATH Day,9
+15 DATE OF DEATH Year,1932
+17 I HEREBY CERTIFY, That I attended the deceased from Month,May
+17 I HEREBY CERTIFY, That I attended the deceased from Day,19
+17 I HEREBY CERTIFY, That I attended the deceased from Year,1932
+17 I HEREBY CERTIFY, That I last saw h... alive on Month,August
+17 I HEREBY CERTIFY, That I last saw h... alive on Day,9
+17 I HEREBY CERTIFY, That I last saw h... alive on Year,1932
+17 and that death occurred on the date stated above, at,1 P.M.
+THE CAUSE OF DEATH * was as follows:,Pulmonary Tuberculosis
+Duration yrs.,
+Duration mos.,
+Duration ds.,
+Contributory Secondary,
+Contributory Secondary Duration yrs.,
+Contributory Secondary Duration mos.,
+Contributory Secondary Duration ds.,
+Signed,William H. Gibbons
+M. D.,M.D.
+Date,Aug 10 1932
+Address,Groom
+*State the Disease Causing Death, or, in deaths from Violent Causes, state (1) Means of Injury and (2) Whether Accidental, Suicidal or Homicidal. 18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients or Recent Residents) At place of death yrs.,2
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients or Recent Residents) At place of death mos.,22
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients or Recent Residents) At place of death ds.,
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients or Recent Residents) In the State yrs.,
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients or Recent Residents) In the State mos.,
+18 LENGTH OF RESIDENCE (For Hospitals, Institutions, Transients or Recent Residents) In the State ds.,
+Where was disease contracted, if not at place of death?,1005 W. Mulberry St.
+Where was disease contracted, if not at place of death? (Address),Baltimore, Md.
+Former or usual residence,
+19 PLACE OF BURIAL OR REMOVAL,Mt. Auburn Cemetery
+DATE OF BURIAL,Aug 13 1932
+20 UNDERTAKER,Mrs. Katie R. Williams
+20 UNDERTAKER ADDRESS,Belvedere St. Balto.

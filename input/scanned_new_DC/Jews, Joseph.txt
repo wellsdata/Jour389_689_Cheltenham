@@ -1,0 +1,63 @@
+Fields,Results
+Registration Dist. No.,240
+County (under 'PLACE OF DEATH'),Pr. Geo.
+Village or City (under 'PLACE OF DEATH'),Cheltenham
+(No.) (next to Village or City),
+St. (next to Registration Dist. No.),
+Ward (next to St.),
+2 FULL NAME,Joseph Jevoo
+3 SEX,Male
+4 COLOR OR RACE,Col
+5 SINGLE, MARRIED, WIDOWED OR DIVORCED (Write the word),Single
+6 DATE OF BIRTH (Month),Oct
+6 DATE OF BIRTH (Day),9
+6 DATE OF BIRTH (Year),1917
+7 AGE yrs.,14
+7 AGE mos.,8
+7 AGE ds.,4
+7 AGE IF LESS than 1 day hrs.,
+7 AGE IF LESS than 1 day min.,
+8 OCCUPATION (a) Trade, profession or particular kind of work,Domestic Housewife
+8 (b) General nature of industry business, or establishment in which employed or employer),
+9 BIRTHPLACE (State or country),Md
+10 NAME OF FATHER,Samuel Jevoo
+11 BIRTHPLACE OF FATHER (State or country),Md
+12 MAIDEN NAME OF MOTHER,Margaret Jevoo
+13 BIRTHPLACE OF MOTHER (State or country),Md
+14 THE ABOVE IS TRUE TO THE BEST OF MY KNOWLEDGE (Informant),Mrs. D. Ryle Supt.
+14 THE ABOVE IS TRUE TO THE BEST OF MY KNOWLEDGE (Address),Cheltenham Md
+15 Filed (Date),June 13, 1932
+15 Registrar (Signature),J. B. Smith
+16 DATE OF DEATH (Month),June
+16 DATE OF DEATH (Day),13
+16 DATE OF DEATH (Year),1932
+17 I HEREBY CERTIFY, That I attended the deceased from (Month),Feb
+17 I HEREBY CERTIFY, That I attended the deceased from (Day),22
+17 I HEREBY CERTIFY, That I attended the deceased from (Year),1932
+17 that I last saw h... alive on (Month),June
+17 that I last saw h... alive on (Day),11
+17 that I last saw h... alive on (Year),1932
+17 and that death occurred on the date stated above, at (Time),7 a.m.
+THE CAUSE OF DEATH * was as follows: (Primary),Pulmonary Tuberculosis & Nephritis
+THE CAUSE OF DEATH * was as follows: (Secondary),
+(Duration) yrs. (Primary Cause),1
+(Duration) mos. (Primary Cause),
+(Duration) ds. (Primary Cause),
+Contributory Secondary (Duration) yrs.,
+Contributory Secondary (Duration) mos.,
+Contributory Secondary (Duration) ds.,
+(Signed) M. D. (Doctor's Name),William H. Gibbons M. D.
+(Signed) (Date) (Doctor's Date),June 13, 1932
+(Address) (Doctor's Address),Croom Md
+18 LENGTH OF RESIDENCE (At place of death yrs.),1
+18 LENGTH OF RESIDENCE (At place of death mos.),
+18 LENGTH OF RESIDENCE (At place of death ds.),
+18 LENGTH OF RESIDENCE (In the State yrs.),
+18 LENGTH OF RESIDENCE (In the State mos.),
+18 LENGTH OF RESIDENCE (In the State ds.),
+Where was disease contracted, if not at place of death?,
+Former or usual residence,Lapidum Md
+19 PLACE OF BURIAL OR REMOVAL,Cheltenham
+DATE OF BURIAL,June 15, 1932
+20 UNDERTAKER,Jas. A. Patterson
+20 UNDERTAKER (Address),Perryville
