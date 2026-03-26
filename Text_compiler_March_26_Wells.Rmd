@@ -106,35 +106,8 @@ The 87 news articles are in a folder called input.
 # Load required packages
 
 # Set the paths for your folders
-input_folder <- "./input/"  # Replace with your input folder path
+input_folder <- "./input/bal_sun_march_24_text/"  # Replace with your input folder path
 output_folder <- "./output/" # Replace with your output folder path
-
-# Create output folder if it doesn't exist
-if (!dir.exists(output_folder)) {
-}
-
-# Get a list of all .rtf files in the input folder
-rtf_files <- list.files(path = input_folder, pattern = "\\.RTF$", full.names = TRUE)
-
-# Convert each .rtf file to .txt
-for (file in rtf_files) {
-  # Extract the file name without extension
-  file_name <- tools::file_path_sans_ext(basename(file))
-  
-  # Read the RTF content
-  rtf_content <- read_rtf(file)
-  
-  # Create output file path
-  output_file <- file.path(output_folder, paste0(file_name, ".txt"))
-  
-  # Write the content to a .txt file
-  writeLines(rtf_content, output_file)
-  
-  # Print progress
-  cat("Converted:", file, "to", output_file, "\n")
-}
-
-cat("Conversion complete! You're a genius!\n")
 ```
 
 **Next, we take all of those text files and jam them into a dataframe**
@@ -152,21 +125,21 @@ It allows you to perform advanced text analytics on the news stories
 ###
 
 #Adjust thisline for your file name
-files <- list.files("./output", pattern="*.txt") %>% 
+files <- list.files("./input/bal_sun_march_24_text/", pattern="*.txt") %>% 
   as.data.frame() |> 
   rename(filename = 1) |> 
   #create an matching file name
-  mutate(index = str_replace_all(filename, ".txt", "")) %>%
+  mutate(index = str_replace_all(filename, "_1.txt", "")) %>%
   mutate(index = tolower(gsub("[[:punct:][:space:]|]", "", index))) |> 
   mutate(index = tolower(index)) |> 
-  mutate(index = str_sub(index, 1, 25)) |> 
+  # mutate(index = str_sub(index, 1, 25)) |> 
   distinct(index, .keep_all = TRUE)
 ```
 
 ## Check for duplicates
 
 ```{r include=FALSE}
-dupe_data <- rio::import("nexis_search_results_list.xlsx") |> 
+dupe_data <- rio::import("./input/Baltimore Sun ProQuestDocuments-2026-03-22.xlsx") |> 
   clean_names() |> 
    #create an matching file name
   mutate(index = tolower(gsub("[[:punct:][:space:]|]", "", title))) |> 
@@ -179,25 +152,23 @@ dupe_data <- rio::import("nexis_search_results_list.xlsx") |>
 
 ## Zap duplicates
 
-> Article count drops from 87 to 68
+> Article count drops from 905 to 693
 
 ```{r include=FALSE}
 #Join the file list to the index
 
-final_data <- rio::import("nexis_search_results_list.xlsx", 
+final_data <- rio::import("./input/Baltimore Sun ProQuestDocuments-2026-03-22.xlsx", 
                           setclass = "tibble",
                           col_types = "text") |> 
   clean_names() |> 
-  mutate(published_date = case_when(
-    str_detect(published_date, "^[0-9]+$") ~ as.character(excel_numeric_to_date(as.numeric(published_date))),
-    TRUE ~ published_date
-  )) |>
+  mutate(date_clean = mdy(pubdate)) |>
   ungroup() |> 
    #create an matching file name
-  mutate(index = tolower(gsub("[[:punct:][:space:]|]", "", title))) |> 
+  mutate(index = tolower(gsub("[[:punct:][:space:]|]", "", store_id))) |> 
   mutate(index = tolower(index)) |> 
-  mutate(index = str_sub(index, 1, 25)) |> 
-  distinct(index, .keep_all = TRUE)
+  # mutate(index = str_sub(index, 1, 25)) |> 
+  distinct(index, .keep_all = TRUE) |> 
+  filter(!str_detect(title, "Classified Ad"))
 ```
 
 ### Check for duplicate entries
@@ -219,7 +190,7 @@ final_data |>
 final_index <- final_data |> 
   inner_join(files, c("index")) |> 
 #you need the actual hard-coded path on this line below to the text
-  mutate(filepath = paste0("./output/", filename))
+  mutate(filepath = paste0("./input/bal_sun_march_24_text/", filename))
 
 ```
 
@@ -261,21 +232,8 @@ articles_final <- articles_df %>%
     across(-sentence, \(x) first(x))
   ) %>%
   ungroup() %>%
-  mutate(
-    # Fix Excel Dates vs String Dates
-    published_date = case_when(
-      str_detect(published_date, "^[0-9]+$") ~ as.character(excel_numeric_to_date(as.numeric(published_date))),
-      TRUE ~ published_date
-    ),
-    # STRIP METADATA:
-    # 1. Remove header (everything before 'Body')
-    full_text = sub("(?i).*?Body\\s+", "", full_text),
-    # 2. Remove footer (everything from Copyright/Classification to end)
-    full_text = sub("(?i)(\u00a9|Classification|Load-Date|End of Document).*", "", full_text),
-    full_text = trimws(full_text)
-  ) %>%
   # Keep only your required columns
-  select(filename, published_date, headline, full_text, publication_4, length, section, byline, filepath)
+  select(date_clean, year, title, abstract, authors, document_type, store_id, article_type, full_text, entry_date, pubtitle, document_url, index, filepath)
 
 
 ```
@@ -285,7 +243,7 @@ articles_final <- articles_df %>%
 :::
 
 ```{r}
-wrapped_text <- strwrap(as.character(articles_final$full_text[2]), width = 60)
+wrapped_text <- strwrap(as.character(articles_final$full_text[11]), width = 60)
 writeLines(wrapped_text, "temp_text.txt")
 file.edit("temp_text.txt")
 ```
@@ -296,30 +254,38 @@ file.edit("temp_text.txt")
 > out so we have clean text for analysis
 
 ```{r}
-
+#Gemini with the regex solution
 
 articles_df <- articles_final |>
   mutate(
-    # 1. Strip everything BEFORE the word "Body"
-    # This looks for "Body" (case insensitive) and removes everything preceding it
-    clean_text = sub("(?i).*?Body\\s+", "", full_text),
+    # 1. Remove "Further reproduction prohibited..."
+    clean_text = gsub("Further\\s+reproduction\\s+prohibited\\s+without\\s+permission", 
+                      "", full_text, ignore.case = TRUE),
     
-    # 2. Strip everything AFTER the metadata markers
-    # This looks for the first instance of ©, "Classification", or "Load-Date" 
-    # and deletes that and everything following it.
-    clean_text = sub("(?i)(\u00a9|Classification|Load-Date|End of Document).*", "", clean_text),
+    # 2. Remove "Reproduced with permission of..."
+    clean_text = gsub("Reproduced\\s+with\\s+permission\\s+of\\s+the\\s+copyright\\s+owner", 
+                      "", clean_text, ignore.case = TRUE),
     
-    # 3. Final polish: remove any leftover trailing whitespace
+    # 3. Final polish: remove double spaces and trim edges
+    clean_text = gsub("\\s+", " ", clean_text),
     clean_text = trimws(clean_text)
-  ) |>
-  # Optional: Remove the original messy full_text and keep the clean one
-  select(filename, published_date, headline, clean_text, everything(), -full_text) |> 
-  rename(full_text = clean_text)
+  )
 
 
-
+write_csv(articles_df, "./output/bal_sun_march_24_articles.csv")
 
 ```
+
+
+#STOPPED MARCH 26
+
+
+```{r}
+wrapped_text <- strwrap(as.character(articles_df$clean_text[3]), width = 60)
+writeLines(wrapped_text, "temp_text.txt")
+file.edit("temp_text.txt")
+```
+
 
 ## Deal with dates
 
