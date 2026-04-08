@@ -9,13 +9,9 @@ editor_options:
 [Baltimore Sun v. Afro American news coverage]{style="font-size: 40pt;"}
 :::
 
-April 2, 2026
-<br>
+April 2, 2026 <br>
 
-
-
-> This code compares news coverage of Cheltenham in the Baltimore Sun vs the Afro-American
-> We will use R and the Tidytext package to explore common words, analyze sentiment, and then the Quanteda package to examine keywords in the story context.
+> This code compares news coverage of Cheltenham in the Baltimore Sun vs the Afro-American We will use R and the Tidytext package to explore common words, analyze sentiment, and then the Quanteda package to examine keywords in the story context.
 
 <br>
 
@@ -25,8 +21,7 @@ Philip Merrill College of Journalism, University of Maryland.\
 [robwells\@umd.edu](mailto:robwells@umd.edu){.email} \| <a href="https://www.linkedin.com/in/rob-wells-7929329/">LinkedIn</a>.\
 :::
 
-**Ela Jalil**
-**Akria Kyles**
+**Ela Jalil** **Akria Kyles**
 
 ## Load software
 
@@ -56,22 +51,26 @@ library(spacyr)
 library(zoo)
 ```
 
+```{r}
+setwd('/Users/elajalil/Documents/Github/Jour389_689_Cheltenham')
+```
+
 <br>
 
 #Import Combined Afro-Sun articles
 
 ```{r}
+#I'm confused becase everything is called initially to Afro_sun but then it suddenly switches to afro_sun_articles
 afro_sun <- read_csv("./input/afro_sun_articles_april_2.csv")
 ```
 
-
 ### Count the titles
+
 ```{r}
 afro_sun |> 
   count(pubtitle) |> 
   arrange(desc(n))
 ```
-
 
 ```{r message=FALSE, warning=FALSE}
 
@@ -79,8 +78,6 @@ afro_sun <- afro_sun |>
   mutate(yearmo = as.yearmon(date_clean))
 
 ```
-
-
 
 ```{r}
 afro_sun |> 
@@ -97,16 +94,22 @@ ggplot(aes(x = factor(year), y = total, fill = pubtitle)) +
 ```
 
 ```{r}
-doc <- afro_sun_articles |> 
+#doc <- afro_sun_articles |> 
+  #group_by(pubtitle) |> 
+  #count(document_clean)
+#there is no document named afro_sun_articles and there is no column for document_clean. Changed to document_type
+doc <- afro_sun |> 
   group_by(pubtitle) |> 
-  count(document_clean)
+  count(document_type)
 
 ```
 
 ### Clean document type
+
 ```{r}
-afro_sun_articles <- afro_sun_articles %>%
-  mutate(document_clean = case_when(
+#Got rid of afro_sun_articles. Changed from document_clean to document_type
+afro_sun <- afro_sun %>%
+  mutate(document_type = case_when(
     document_type == "ar ticle"  ~ "article",
     document_type == "arti cle"  ~ "article",
     document_type == "artic le"  ~ "article",
@@ -121,13 +124,13 @@ afro_sun_articles <- afro_sun_articles %>%
 # Wells ask - create a new column counting the words of clean_text
 
 ```{r}
-letters <- afro_sun_articles |> 
+#got rid of afro_sun_articles to afro_sun
+letters <- afro_sun |> 
   filter(document_type =="letter_to_editor")
 
 
 
 ```
-
 
 # Quick view of any entry by row
 
@@ -135,9 +138,13 @@ letters <- afro_sun_articles |>
 wrapped_text <- strwrap(as.character(letters$full_text[1]), width = 60)
 writeLines(wrapped_text, "temp_text.txt")
 file.edit("temp_text.txt")
-```
-# Bigrams
 
+#Can put whatever row you want to read in []
+#Talk about how we want to categorize these letters
+#Add another column in categorization - start working on key words for the codes
+```
+
+# Bigrams
 
 ```{r}
 
@@ -553,17 +560,19 @@ datatable(spacy_adj_noun_counts,
 [Process Text Corpus Object]{style="font-size: 18px; font-weight: bold;"}
 
 ```{r}
+#change to afro_sun
 # Create a unique document ID for each article
-bal_sun <- bal_sun |>
+afro_sun <- afro_sun |>
   mutate(doc_id = paste0("article_", row_number()))
 
 # Create a quanteda corpus using the text column
 library(quanteda)
+#Look into documentation for quanteda to figure out how to add metadata to corpus object for the quick results
 
-my_corpus <- corpus(bal_sun, text_field = "text")
+my_corpus <- corpus(afro_sun, text_field = "clean_text")
 
 # Add metadata (optional but useful)
-docvars(my_corpus)$yearmo <- bal_sun$yearmo
+docvars(my_corpus)$yearmo <- afro_sun$yearmo
 ```
 
 [Search for the term 'media'] {style="font-size: 18px; font-weight: bold;"}
@@ -577,6 +586,12 @@ kwic_media <- kwic(my_tokens, pattern = "media", valuetype = "fixed") |>
   as.data.frame() |>
   mutate(doc_id = docname)
 
+kwic_beating <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |> 
+  as.data.frame() |>
+  mutate(doc_id = docname)
+
+#Maybe try to add which paper is reporting - see if there is a way to add back meta data fields. 
+
 ```
 
 [Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
@@ -588,6 +603,10 @@ media_narratives <- kwic(my_tokens,
   as.data.frame() |>
   mutate(doc_id = docname)
 
+quanteda_df_llm <- kwic(my_tokens, phrase(c("lynch|hung|hang(ed|ing)|executed?|execution|mob\\s+law|vigilance\\s+committee")), window = 20, valuetype = "regex") %>% as.data.frame() |> 
+  distinct(docname,  .keep_all = TRUE)
+
+#hanged became changed - get rid of the question mark, can adapt this - use AI, I want a regular expression that doesn't give me change or hungry. Rob used this code for lynching project. Do this sort of examination of the data. Move KWIC into code. 
 ```
 
 [Create Datatable]{style="font-size: 18px; font-weight: bold;"}
