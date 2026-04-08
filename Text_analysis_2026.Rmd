@@ -598,10 +598,15 @@ kwic_beating <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |>
 kwic_beating_injury <- kwic(my_tokens, 
                      pattern = c("\\bbeat(ing|en|s)?\\b", "\\bhit(ting)?\\b", "\\b(struck|strike|strikes|striking)\\b", 
                                  "\\bbludgeon(ed|ing|s)?\\b", "\\b(shot|shooting)\\b", "\\binjur(ed|y|ies|ing)\\b"), 
-                     valuetype = "regex") |> 
+                     valuetype = "regex",
+                     window = 15) |> 
   as.data.frame() |>
   mutate(doc_id = docname) |>
   filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
+#Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating, 
+wrapped_text <- strwrap(as.character(afro_sun$clean_text[74]), width = 60)
+writeLines(wrapped_text, "temp_text.txt")
+file.edit("temp_text.txt")
 
 ```
 
