@@ -1,0 +1,87 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+---
+title: "census 1920"
+author: "Korzak"
+date: "2026-03-25"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(stringr)
+library(readr)
+library(purrr)
+library(googlesheets4)
+library(janitor)
+library(dbplyr)
+```
+
+#Import
+```{r}
+census01 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSsVUu8Cs7OTJcdXoWgIyibSxtk6_9ccMaCuJ1V0LZCebPkS9Qi0xYytphYJv-jh-17vGBVgQKuNhuW/pub?gid=1761070220&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census02 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSdt6_ASvXPvR4vDqeGq8uqVgEzEx6fTwKfkdv54lLrvQF2FtlcXj_gpAA3O0wO9hLT47YgPvoCLkL6/pub?gid=577153550&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census03 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQbtt2CdCjICQsCPcTU0K1N1HS9bkL20_neX7WRo2cwf2mXUFhAeS3vV5bTQNAtoJwM-Ua2ssa1np-K/pub?gid=2041912232&single=true&output=csv") %>% 
+ mutate(across(everything(), as.character))
+census04 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRXyRPf-64XVztavIqb6uH2majQorkjPDjlxghHhX9AHc_6_smzS7i2-BFWrExm1TbsIIvbO0BgX-gg/pub?gid=1310850143&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census05 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQl-2goNVJ1IjK2vEZ5jEVb442m9LBHnM1YTtKF5UyeWJItRbmB0wV_9U6QbaHQvWxgum8pXJGtU1KU/pub?gid=1932041057&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census06 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSMTzvDDlo7jR17BJDyM-7UKHA_tUX7bvIiBecSo0U9_Zr_zgzYHaaAqkEMztzZOeoM3DgCRKHRde_r/pub?gid=280370267&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census07 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vS2Nsq3zN0SRupIRltirGj8RMI3ZxFVU-8_WgXF3hMNQYy42ss_qsI_qtGqiNM4OX6Gu7xmPkmSHiID/pub?gid=699387722&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census08 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSf2U7zztAaPkasLYG9K3E-IQzaep_JYlmriV9OWtDJqlov45IPwXWmEhxJW-DGIiUJTOns9nx3Ewf5/pub?gid=1524624030&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census09 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTHFLFdnLwDMAIuXsdfmbVIGTZVpjgsqj9gkerhjBiRzr_Kpp5IF7k9f-zCq1kPKpYZjB9wqWz7o5VO/pub?gid=842527959&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census10 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRV2iEpySIMApuisPk-pLWhLkHCZxRQHMeOkmCU2f45ZvH4Wh7KkqdIkC3wUDxQeexok7zM4H-5HJ4E/pub?gid=130949900&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census12 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRUvde3QiCy8LcUCY52XhpZg2Z2EuscFtF0PdYCbLNWe41XyE1DFTiNubzE5zEuqyxJ9aX0qItXFHq7/pub?gid=1366905486&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census13 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSip2zyy648zJ7sVNsEJIVPrkRG8V76sIAkyuSUC8UDBRqo5Eyzelkbdp-49woaZghhAn4ebhLh01dH/pub?gid=301497151&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census14 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vT6USy2IOB1BrvsUpzWzhprE-5y8R7yfsHMPV8qgkCEX0YD-ZZtrufar_CuEFeQrslcEyfM4DNsQDu4/pub?gid=416294423&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census15 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQ1m2qaUtO0RJc72bUzPlDtOqLzJZHvuCeKUKoZEDARLytT5ba-FiveU42cBXBM5GScI2Q5o5YOttuW/pub?gid=1436542462&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census16 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vS3nN7L98ay2x6EDsszKqmoZS7OhbrZxMgiYvbg_yojmEfsMhQcffqZVudn6pRXdNWxZptL3M8rF5Zc/pub?gid=1193413271&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census17 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSdcSi1R0h9lnj4oL8igJwj7vskKpqTgtvqFZ8_ZBlfSuoM01SdBzi2mWkTPfcSGB3AJcf8m8XKjdHg/pub?gid=797975617&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census18 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vThJ-nTiW5lVolYL4t8ALK42MFU7JmauOMV1WfzW0cRPyKy3k15Je4aT_FYNFcLyj2yxiQ0tE9-CzGu/pub?gid=1353427362&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census19 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vROPQzHtm6NT7fQX8Fiqa54j8G2NHQVb8QMFbMYKu2qiFKS4HBqZE1-7zRpCBN1lJS5Klbo-yPJYqzX/pub?gid=1396860523&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+```
+combine
+```{r}
+
+census_1920 <- bind_rows(census01, census02, census03, census04, census05, census06, census07, census08, census09, census10, census12, census13, census14, census15, census16, census17, census18, census19) |> 
+  clean_names() 
+
+
+```
+
+analytics
+```{r}
+
+census_1920 |> 
+  count(relationship_to_head)
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
