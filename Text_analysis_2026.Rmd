@@ -589,11 +589,19 @@ kwic_media <- kwic(my_tokens, pattern = "media", valuetype = "fixed") |>
   as.data.frame() |>
   mutate(doc_id = docname)
 
-kwic_beating_injury <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |> 
+kwic_beating <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |> 
   as.data.frame() |>
   mutate(doc_id = docname)
 
-#Maybe try to add which paper is reporting - see if there is a way to add back meta data fields. 
+#Maybe try to add which paper is reporting - see if there is a way to add back meta data fields
+
+kwic_beating_injury <- kwic(my_tokens, 
+                     pattern = c("\\bbeat(ing|en|s)?\\b", "\\bhit(ting)?\\b", "\\b(struck|strike|strikes|striking)\\b", 
+                                 "\\bbludgeon(ed|ing|s)?\\b", "\\b(shot|shooting)\\b", "\\binjur(ed|y|ies|ing)\\b"), 
+                     valuetype = "regex") |> 
+  as.data.frame() |>
+  mutate(doc_id = docname) |>
+  filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
 
 ```
 
