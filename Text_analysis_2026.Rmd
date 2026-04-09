@@ -9,7 +9,7 @@ editor_options:
 [Baltimore Sun v. Afro American news coverage]{style="font-size: 40pt;"}
 :::
 
-April 2, 2026 <br>
+April 9, 2026 <br>
 
 > This code compares news coverage of Cheltenham in the Baltimore Sun vs the Afro-American We will use R and the Tidytext package to explore common words, analyze sentiment, and then the Quanteda package to examine keywords in the story context.
 
@@ -49,10 +49,12 @@ library(rio)
 library(udpipe)
 library(spacyr)
 library(zoo)
+library(googlesheets4)
+library(janitor)
 ```
 
 ```{r}
-setwd('/Users/elajalil/Documents/Github/Jour389_689_Cheltenham')
+# setwd('/Users/elajalil/Documents/Github/Jour389_689_Cheltenham')
 ```
 
 <br>
@@ -61,7 +63,7 @@ setwd('/Users/elajalil/Documents/Github/Jour389_689_Cheltenham')
 
 ```{r}
 #I'm confused becase everything is called initially to Afro_sun but then it suddenly switches to afro_sun_articles
-afro_sun <- read_csv("./input/afro_sun_articles_april_2.csv")
+afro_sun <- read_csv("./input/afro_sun_articles_april_9.csv")
 ```
 
 ### Count the titles
@@ -71,11 +73,30 @@ afro_sun |>
   count(pubtitle) |> 
   arrange(desc(n))
 ```
-
+# One-time cleaning
 ```{r message=FALSE, warning=FALSE}
-
-afro_sun <- afro_sun |>
-  mutate(yearmo = as.yearmon(date_clean))
+# 
+# afro_sun <- afro_sun |>
+#   mutate(yearmo = as.yearmon(date_clean))
+# 
+# #Got rid of afro_sun_articles. Changed from document_clean to document_type
+# afro_sun <- afro_sun %>%
+#   mutate(document_type = case_when(
+#     document_type == "ar ticle"  ~ "article",
+#     document_type == "arti cle"  ~ "article",
+#     document_type == "artic le"  ~ "article",
+#     document_type == "articl e"  ~ "article",
+#     document_type == "Article"  ~ "article",
+#     TRUE ~ document_type  # Fallback to the original value if no match
+#   )) |> 
+#   mutate(pubtitle = case_when(
+#     pubtitle=="Afro-American (1893-)" ~ "Afro_American",
+#     pubtitle=="The Sun (1837-)" ~ "The_Sun",
+#       TRUE ~ pubtitle 
+#   ))
+# 
+# 
+# write_csv(afro_sun, ("./input/afro_sun_articles_april_9.csv"))                  
 
 ```
 
@@ -87,39 +108,68 @@ ggplot(aes(x = factor(year), y = total, fill = pubtitle)) +
  geom_col() +
   theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust = 1)) +
   #coord_flip() +  
-  labs(title = "Distribution by Month",
-       caption = "n=1030 articles. Graphic by Rob Wells. April 2 -2026",
+  labs(title = "Sun vs Afro, Cheltenham Coverage by Year",
+       caption = "n=1030 articles. Graphic by Rob Wells. April 9 -2026",
        x = "Total",
        y = "")
 ```
 
+###Timeline
 ```{r}
-#doc <- afro_sun_articles |> 
-  #group_by(pubtitle) |> 
-  #count(document_clean)
-#there is no document named afro_sun_articles and there is no column for document_clean. Changed to document_type
+gs4_deauth()
+timeline <- read_sheet("https://docs.google.com/spreadsheets/d/1_MbLJ7RpyzBshRhrnyj122h-uKyhAaK5xYARAwwMoA0/edit?usp=sharing", sheet = "Cheltenham_Timeline") |> 
+     clean_names() |> 
+mutate(year = map_chr(year, ~ {
+    if (is.null(.x) || length(.x) == 0) return(NA_character_) 
+    return(as.character(.x))
+  })) |>
+  filter(cheltenham_only =="X") 
+```
+
+## Join timeline to news coverage by year
+
+```{r}
+#table with year and afro and sun article total by year
+yearly <- afro_sun |> 
+  group_by(pubtitle) |> 
+  count(year, name = "total") |> 
+  pivot_wider(names_from = pubtitle, values_from = total) |> 
+  arrange(year) |> 
+  mutate(year = as.character(year))
+
+#joined with timeline
+timeline_joined <- timeline |>
+  right_join(yearly, by = "year") |> 
+  select(year, event, Afro_American, The_Sun, everything()) |> 
+  arrange(year)
+
+# write_csv(timeline_joined, "./output/timeline_joined_april9.csv")
+
+
+```
+
+
+
+### Count document types by publication
+
+```{r}
+
 doc <- afro_sun |> 
   group_by(pubtitle) |> 
   count(document_type)
 
 ```
 
-### Clean document type
+Analyze articles
+Afro-American (1893-) display_ad 4 - what is in these ads?
 
-```{r}
-#Got rid of afro_sun_articles. Changed from document_clean to document_type
-afro_sun <- afro_sun %>%
-  mutate(document_type = case_when(
-    document_type == "ar ticle"  ~ "article",
-    document_type == "arti cle"  ~ "article",
-    document_type == "artic le"  ~ "article",
-    document_type == "articl e"  ~ "article",
-    TRUE ~ document_type  # Fallback to the original value if no match
-  ))
+Editorials
+--The Afro carried 8 editorials but nothing in the Sun? Are we sure of that? How can we verify it.
+--Pull up one of the Afro editorials and look at 1-2 months on either side 
 
-                     
+Obituaries
+--check Sun, Afro obituaries
 
-```
 
 # Wells ask - create a new column counting the words of clean_text
 
