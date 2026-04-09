@@ -649,18 +649,20 @@ kwic_beating_injury <- kwic(my_tokens,
                      pattern = c("\\bbeat(ing|en|s)?\\b", "\\bhit(ting)?\\b", "\\b(struck|strike|strikes|striking)\\b", 
                                  "\\bbludgeon(ed|ing|s)?\\b", "\\b(shot|shooting)\\b", "\\binjur(ed|y|ies|ing)\\b"), 
                      valuetype = "regex",
-                     window = 15) |> 
+                     window = 20) |> 
   as.data.frame() |>
   mutate(doc_id = docname) |>
   filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
-#Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating,80 mentions beating but would be better under slavery mention, 86, 90, 
-
+#Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating,80 mentions beating but would be better under slavery mention, 86, 90, 97 (includes names of boys), 99, 102 (escapes),104, 109, 122, 124 (boys beat up an elderly man and were sentenced to Cheltenham), 130, 134 (boy is "feeble minded"), 135, 139, 142, 144, 149, 153, 154, 168 (doesn't mention Cheltenham), 173 (boys parents had died and they were living on the streets),       
+#118 - boy commits suicide while convict leased, boy's name is included
+#a Baltimore night club waitress is anxious for MR. MUSE to reimburse her for the money she
+#spent for lawyer's fees to keep his son out of Cheltenham. She can be reached at 1031 McCulloh Street (174), 178 (violating parole), 184, 188, 193,203, 210 (boy beat by his mother instead of going to Cheltenham),   
 #figure out ways to tighten up the search 
 
 ```
 
 ```{r}
-wrapped_text <- strwrap(as.character(afro_sun$clean_text[97]), width = 60)
+wrapped_text <- strwrap(as.character(afro_sun$clean_text[210]), width = 60)
 writeLines(wrapped_text, "temp_text.txt")
 file.edit("temp_text.txt")
 ```
