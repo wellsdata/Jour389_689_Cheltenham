@@ -603,11 +603,16 @@ kwic_beating_injury <- kwic(my_tokens,
   as.data.frame() |>
   mutate(doc_id = docname) |>
   filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
-#Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating, 
-wrapped_text <- strwrap(as.character(afro_sun$clean_text[74]), width = 60)
+#Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating,80 mentions beating but would be better under slavery mention, 86, 90, 
+
+#figure out ways to tighten up the search 
+
+```
+
+```{r}
+wrapped_text <- strwrap(as.character(afro_sun$clean_text[97]), width = 60)
 writeLines(wrapped_text, "temp_text.txt")
 file.edit("temp_text.txt")
-
 ```
 
 [Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
