@@ -655,14 +655,15 @@ kwic_beating_injury <- kwic(my_tokens,
 #Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating,80 mentions beating but would be better under slavery mention, 86, 90, 97 (includes names of boys), 99, 102 (escapes),104, 109, 122, 124 (boys beat up an elderly man and were sentenced to Cheltenham), 130, 134 (boy is "feeble minded"), 135, 139, 142, 144, 149, 153, 154, 168 (doesn't mention Cheltenham), 173 (boys parents had died and they were living on the streets),       
 #118 - boy commits suicide while convict leased, boy's name is included
 #a Baltimore night club waitress is anxious for MR. MUSE to reimburse her for the money she
-#spent for lawyer's fees to keep his son out of Cheltenham. She can be reached at 1031 McCulloh Street (174), 178 (violating parole), 184, 188, 193,203, 210 (boy beat by his mother instead of going to Cheltenham), 214, 235, 243, 245 (rape charge against four boys for someone in the institution), 249, 263, 272, 298, 303, 304 (man was fired after eating in a white dining room), 315, 319, 325, 328 (pretty sure this is about boys beating up other boys), 344, 349, 351, 352, 353, 355, 358 (said a boy raped the toddler daughter of a white farmer he was working for), 370, 373, 378 (held up a "little white boy" doesn't give same consideration to Black children), 379,380,382,385, 393, 398, 407, 408, 413, 416, 417, 418, 426, 433, 435, 438, 449,455 (mentioned a special dispatch, did Cheltenham have a partnership with The Sun)?       
-#Not sure about 386 - a Cheltenham official hit a boy with a car but not sure if that was outside of the institution, 440 (a boy killed another boy in the institution). 453 (another case where a boy killed another boy), 
-#figure out ways to tighten up the search 
+#spent for lawyer's fees to keep his son out of Cheltenham. She can be reached at 1031 McCulloh Street (174), 178 (violating parole), 184, 188, 193,203, 210 (boy beat by his mother instead of going to Cheltenham), 214, 235, 243, 245 (rape charge against four boys for someone in the institution), 249, 263, 272, 298, 303, 304 (man was fired after eating in a white dining room), 315, 319, 325, 328 (pretty sure this is about boys beating up other boys), 344, 349, 351, 352, 353, 355, 358 (said a boy raped the toddler daughter of a white farmer he was working for), 370, 373, 378 (held up a "little white boy" doesn't give same consideration to Black children), 379,380,382,385, 393, 398, 407, 408, 413, 416, 417, 418, 426, 433, 435, 438, 449,455 (mentioned a special dispatch, did Cheltenham have a partnership with The Sun?),457 (a boy was arrested on the complaint of someone from the Charity Organization Society), 458,470,472,476,486, 487(boys escaped),489, 495,491, 497(easy for boys to escape, neighbors are unhappy),500,503,504,          
+#Not sure about 386 - a Cheltenham official hit a boy with a car but not sure if that was outside of the institution, 440 (a boy killed another boy in the institution). 453 (another case where a boy killed another boy),
+#482 - a boy murders one of his employers because he doesn't get treated properly 
+#figure out ways to tighten up the search. 483 (says that they made him do intense farm work and didn't pay him, and talks about how bad Cheltenham was and that the bigger boys made the little boys do whatever they wanted, were going to lynch him), 484, 
 
 ```
 
 ```{r}
-wrapped_text <- strwrap(as.character(afro_sun$clean_text[455]), width = 60)
+wrapped_text <- strwrap(as.character(afro_sun$clean_text[506]), width = 60)
 writeLines(wrapped_text, "temp_text.txt")
 file.edit("temp_text.txt")
 ```
