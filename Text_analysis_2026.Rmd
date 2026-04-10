@@ -73,7 +73,9 @@ afro_sun |>
   count(pubtitle) |> 
   arrange(desc(n))
 ```
+
 # One-time cleaning
+
 ```{r message=FALSE, warning=FALSE}
 # 
 # afro_sun <- afro_sun |>
@@ -115,6 +117,7 @@ ggplot(aes(x = factor(year), y = total, fill = pubtitle)) +
 ```
 
 ###Timeline
+
 ```{r}
 gs4_deauth()
 timeline <- read_sheet("https://docs.google.com/spreadsheets/d/1_MbLJ7RpyzBshRhrnyj122h-uKyhAaK5xYARAwwMoA0/edit?usp=sharing", sheet = "Cheltenham_Timeline") |> 
@@ -148,8 +151,6 @@ timeline_joined <- timeline |>
 
 ```
 
-
-
 ### Count document types by publication
 
 ```{r}
@@ -160,16 +161,14 @@ doc <- afro_sun |>
 
 ```
 
-Analyze articles
-Afro-American (1893-) display_ad 4 - what is in these ads?
+Analyze articles Afro-American (1893-) display_ad 4 - what is in these ads?
 
-Editorials
---The Afro carried 8 editorials but nothing in the Sun? Are we sure of that? How can we verify it.
---Pull up one of the Afro editorials and look at 1-2 months on either side 
+Editorials --The Afro carried 8 editorials but nothing in the Sun?
+Are we sure of that?
+How can we verify it.
+--Pull up one of the Afro editorials and look at 1-2 months on either side
 
-Obituaries
---check Sun, Afro obituaries
-
+Obituaries --check Sun, Afro obituaries
 
 # Wells ask - create a new column counting the words of clean_text
 
@@ -656,13 +655,14 @@ kwic_beating_injury <- kwic(my_tokens,
 #Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating,80 mentions beating but would be better under slavery mention, 86, 90, 97 (includes names of boys), 99, 102 (escapes),104, 109, 122, 124 (boys beat up an elderly man and were sentenced to Cheltenham), 130, 134 (boy is "feeble minded"), 135, 139, 142, 144, 149, 153, 154, 168 (doesn't mention Cheltenham), 173 (boys parents had died and they were living on the streets),       
 #118 - boy commits suicide while convict leased, boy's name is included
 #a Baltimore night club waitress is anxious for MR. MUSE to reimburse her for the money she
-#spent for lawyer's fees to keep his son out of Cheltenham. She can be reached at 1031 McCulloh Street (174), 178 (violating parole), 184, 188, 193,203, 210 (boy beat by his mother instead of going to Cheltenham), 214, 235, 243, 245 (rape charge against four boys for someone in the institution), 249, 263, 272, 298, 303, 304 (man was fired after eating in a white dining room), 315, 319, 325, 328 (pretty sure this is about boys beating up other boys), 344, 349, 351, 352, 353, 355, 358 (said a boy raped the toddler daughter of a white farmer he was working for), 370, 373, 378 (held up a "little white boy" doesn't give same consideration to Black children), 379,             
+#spent for lawyer's fees to keep his son out of Cheltenham. She can be reached at 1031 McCulloh Street (174), 178 (violating parole), 184, 188, 193,203, 210 (boy beat by his mother instead of going to Cheltenham), 214, 235, 243, 245 (rape charge against four boys for someone in the institution), 249, 263, 272, 298, 303, 304 (man was fired after eating in a white dining room), 315, 319, 325, 328 (pretty sure this is about boys beating up other boys), 344, 349, 351, 352, 353, 355, 358 (said a boy raped the toddler daughter of a white farmer he was working for), 370, 373, 378 (held up a "little white boy" doesn't give same consideration to Black children), 379,380,382,385, 393, 398, 407, 408, 413, 416, 417, 418, 426, 433, 435, 438, 449,455 (mentioned a special dispatch, did Cheltenham have a partnership with The Sun)?       
+#Not sure about 386 - a Cheltenham official hit a boy with a car but not sure if that was outside of the institution, 440 (a boy killed another boy in the institution). 453 (another case where a boy killed another boy), 
 #figure out ways to tighten up the search 
 
 ```
 
 ```{r}
-wrapped_text <- strwrap(as.character(afro_sun$clean_text[380]), width = 60)
+wrapped_text <- strwrap(as.character(afro_sun$clean_text[455]), width = 60)
 writeLines(wrapped_text, "temp_text.txt")
 file.edit("temp_text.txt")
 ```
