@@ -54,7 +54,7 @@ library(janitor)
 ```
 
 ```{r}
-# setwd('/Users/elajalil/Documents/Github/Jour389_689_Cheltenham')
+#setwd('/Users/elajalil/Documents/Github/Jour389_689_Cheltenham')
 ```
 
 <br>
@@ -664,9 +664,59 @@ kwic_beating_injury <- kwic(my_tokens,
 
 ```
 
+Creating case_when function to add codes
+
 ```{r}
-wrapped_text <- strwrap(as.character(afro_sun$clean_text[1026]), width = 60)
-writeLines(wrapped_text, "temp_text.txt")
+# Get the doc_id_nums from the kwic search
+kwic_ids <- kwic_beating_injury |>
+  mutate(doc_id_num = as.integer(str_extract(doc_id, "\\d+"))) |>
+  dplyr::pull(doc_id_num) |>
+  unique()
+
+# Doc IDs to exclude
+exclude_ids <- c(
+  27, 29, 40, 62, 65, 67, 69, 71, 80, 86, 90, 97, 99, 102, 104, 109, 118,
+  122, 124, 130, 134, 135, 139, 142, 144, 149, 153, 154, 168, 173, 174,
+  178, 184, 188, 193, 203, 210, 214, 235, 243, 245, 249, 263, 272, 298,
+  303, 304, 315, 319, 325, 328, 344, 349, 351, 352, 353, 355, 358, 370,
+  373, 378, 379, 380, 382, 385, 393, 398, 407, 408, 413, 416, 417, 418,
+  426, 433, 435, 438, 449, 455, 457, 458, 470, 472, 476, 482, 483, 484,
+  486, 487, 489, 491, 495, 497, 500, 503, 504, 506, 511, 516, 529, 531,
+  533, 543, 545, 546, 552, 557, 562, 564, 565, 566, 571, 572, 574, 584,
+  585, 586, 591, 595, 598, 603, 610, 613, 617, 631, 638, 643, 663, 668,
+  669, 671, 674, 695, 701, 709, 711, 712, 714, 715, 718, 719, 720, 726,
+  735, 738, 744, 745, 749, 753, 755, 759, 768, 772, 782, 821, 823, 824,
+  827, 831, 832, 878, 882, 883, 886, 898, 900, 921, 928, 939, 942, 949,
+  951, 963, 968, 981, 988, 992, 1000, 1007, 1008, 1010, 1014, 1020, 1023
+)
+
+afro_sun <- afro_sun |>
+  mutate(
+    doc_id_num = as.integer(str_extract(doc_id, "\\d+")),
+    categories = case_when(
+      doc_id_num %in% kwic_ids & !doc_id_num %in% exclude_ids ~ "beating_injury",
+      TRUE ~ NA_character_
+    )
+  )
+
+# Quick check
+afro_sun |> count(categories)
+```
+
+Checking how many articles are in the beating_injury codde
+
+```{r}
+afro_sun %>% 
+  filter(categories == "beating_injury") %>% 
+  count(pubtitle)
+#The Afro had 39 articles related to abuse and The Sun had 21 articles 
+#The Afro 39/319 = 12.2% of articles, TBS: 21/711 = 2.9% of articles
+
+```
+
+```{r}
+wrapped_text <- strwrap(as.character(afro_sun$clean_text[1026]), width = 60) %>% 
+writeLines(wrapped_text, "temp_text.txt") %>% 
 file.edit("temp_text.txt")
 ```
 
