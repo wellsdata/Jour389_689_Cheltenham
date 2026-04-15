@@ -71,6 +71,11 @@ hickey_deaths <- read_sheet("https://docs.google.com/spreadsheets/d/1FnXL2Biktao
 # Streamlined workflow 
 This combines the data and arrives directly at the 243 number
 
+
+
+
+
+
 ```{r}
 # --- Config ---
 biennial_years <- c(1903, 1907, 1909, 1911, 1913, 1915, 1917, 1930, 1932, 1934, 1936, 1938)
@@ -125,6 +130,12 @@ deaths_summary <- joined |>
 cat("Total deaths:", sum(deaths_summary$best_estimate, na.rm = TRUE), "\n")
 cat("Rows with no data:", sum(is.na(deaths_summary$best_estimate)), "\n")
 ```
+
+#Ela - Tiasia: answer this question please
+But looking at your data I notice some oddities — for instance 1910 appears as its own row with total_deaths = 2, even though 1909 and 1911 are both biennial years. And 1916 appears with no deaths, sitting between biennial years 1915 and 1917.
+Are those genuinely standalone annual reports, or might they be data entry artifacts? That could affect whether your biennial logic is handling them correctly.
+
+
 
 
 # Old code below
