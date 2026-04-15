@@ -9,7 +9,7 @@ editor_options:
 [Baltimore Sun v. Afro American news coverage]{style="font-size: 40pt;"}
 :::
 
-April 9, 2026 <br>
+April 15, 2026 <br>
 
 > This code compares news coverage of Cheltenham in the Baltimore Sun vs the Afro-American We will use R and the Tidytext package to explore common words, analyze sentiment, and then the Quanteda package to examine keywords in the story context.
 
@@ -62,9 +62,170 @@ library(janitor)
 #Import Combined Afro-Sun articles
 
 ```{r}
-#I'm confused becase everything is called initially to Afro_sun but then it suddenly switches to afro_sun_articles
+
 afro_sun <- read_csv("./input/afro_sun_articles_april_9.csv")
 ```
+
+#KWIC search
+```{r}
+#change to afro_sun
+# Create a unique document ID for each article
+afro_sun <- afro_sun |>
+  mutate(doc_id = paste0("article_", row_number()))
+
+# Create a quanteda corpus using the text column
+library(quanteda)
+#Look into documentation for quanteda to figure out how to add metadata to corpus object for the quick results
+
+my_corpus <- corpus(afro_sun, text_field = "clean_text")
+
+# Add metadata (optional but useful)
+docvars(my_corpus)$yearmo <- afro_sun$yearmo
+```
+
+[Search for the term 'media'] {style="font-size: 18px; font-weight: bold;"}
+
+```{r}
+# Tokenize corpus
+my_tokens <- tokens(my_corpus)
+
+#Adjust the window = 20 to get more text on either side
+# KWIC search
+kwic_broom <- kwic(my_tokens, pattern = "broom", valuetype = "regex",window = 20) |> 
+  as.data.frame() |>
+  mutate(doc_id = docname)
+```
+
+### Examine a single article
+```{r}
+afro_sun$clean_text[35] |>
+  strwrap(width = 60) |>
+  writeLines("temp_text.txt")
+
+file.edit("temp_text.txt")
+```
+
+
+```{r}
+kwic_broom2 <- kwic(my_tokens, 
+                     pattern = c("broom", "factory", "labor"), 
+                     valuetype = "regex",
+                     window = 20) |> 
+  as.data.frame() |>
+  mutate(doc_id = docname)
+```
+
+
+
+## Searches by Ela, Akira, Nina
+```{r}
+kwic_beating <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |> 
+  as.data.frame() |>
+  mutate(doc_id = docname)
+
+#Maybe try to add which paper is reporting - see if there is a way to add back meta data fields
+
+kwic_beating_injury <- kwic(my_tokens, 
+                     pattern = c("\\bbeat(ing|en|s)?\\b", "\\bhit(ting)?\\b", "\\b(struck|strike|strikes|striking)\\b", 
+                                 "\\bbludgeon(ed|ing|s)?\\b", "\\b(shot|shooting)\\b", "\\binjur(ed|y|ies|ing)\\b"), 
+                     valuetype = "regex",
+                     window = 20) |> 
+  as.data.frame() |>
+  mutate(doc_id = docname) |>
+  filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
+#Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating,80 mentions beating but would be better under slavery mention, 86, 90, 97 (includes names of boys), 99, 102 (escapes),104, 109, 122, 124 (boys beat up an elderly man and were sentenced to Cheltenham), 130, 134 (boy is "feeble minded"), 135, 139, 142, 144, 149, 153, 154, 168 (doesn't mention Cheltenham), 173 (boys parents had died and they were living on the streets),       
+#118 - boy commits suicide while convict leased, boy's name is included
+#a Baltimore night club waitress is anxious for MR. MUSE to reimburse her for the money she
+#spent for lawyer's fees to keep his son out of Cheltenham. She can be reached at 1031 McCulloh Street (174), 178 (violating parole), 184, 188, 193,203, 210 (boy beat by his mother instead of going to Cheltenham), 214, 235, 243, 245 (rape charge against four boys for someone in the institution), 249, 263, 272, 298, 303, 304 (man was fired after eating in a white dining room), 315, 319, 325, 328 (pretty sure this is about boys beating up other boys), 344, 349, 351, 352, 353, 355, 358 (said a boy raped the toddler daughter of a white farmer he was working for), 370, 373, 378 (held up a "little white boy" doesn't give same consideration to Black children), 379,380,382,385, 393, 398, 407, 408, 413, 416, 417, 418, 426, 433, 435, 438, 449,455 (mentioned a special dispatch, did Cheltenham have a partnership with The Sun?),457 (a boy was arrested on the complaint of someone from the Charity Organization Society), 458,470,472,476,486, 487(boys escaped),489, 495,491, 497(easy for boys to escape, neighbors are unhappy),500,503,504,506(boys were sentenced to prison for beating up a guard),511(boys attempted to kill teacher to escape),516,529,531,533,543,545,546,552,557,562,564,565,566,571,572,574,584,585, 586,591,595,598,603(boy repeatedly ran away from Cheltenham),610,613,617,631,638,643(University of Maryland using Cheltenham's steady labor supply?),663, 668(State takeover process),669, 671,674,695,701,709(mention of boy working for a farmer),711,712,714,715,718,719,720,726,735,738,744,745,749,753,755,759,768,772,782,821,823,824,827,831,832(letter to the editor about firing superintendent),878,882,883,886, 898, 900, 921,928(says that children are like wild animals), 939,942,949(op ed that says she didn't believe the abuse reports),951,963,968,981(not paying unfit employees),988, 992,1000 (St Mary's can't afford to send more boys to Cheltenham),1007,1008,1010,1014,1020 (frames state takeover to be because inability to reform boys),1023,
+#615 - first Sun article about abuse at the institution, 660 (mentions abuse but focuses more on the "violence of the boys")
+#Not sure about 386 - a Cheltenham official hit a boy with a car but not sure if that was outside of the institution, 440 (a boy killed another boy in the institution). 453 (another case where a boy killed another boy), 855 (mentions cruelty at Cheltenham), 1026(discusses unfair labor usage of boys),1030.
+#482 - a boy murders one of his employers because he doesn't get treated properly 
+#figure out ways to tighten up the search. 483 (says that they made him do intense farm work and didn't pay him, and talks about how bad Cheltenham was and that the bigger boys made the little boys do whatever they wanted, were going to lynch him), 484,  
+#Maybe it would be interesting to explore WHY a boy got sent to Cheltenham, I've seen passing a bad dollar, vagrancy etc. Also different way they describe the boys. 
+
+```
+
+Creating case_when function to add codes
+
+```{r}
+# Get the doc_id_nums from the kwic search
+kwic_ids <- kwic_beating_injury |>
+  mutate(doc_id_num = as.integer(str_extract(doc_id, "\\d+"))) |>
+  dplyr::pull(doc_id_num) |>
+  unique()
+
+# Doc IDs to exclude
+exclude_ids <- c(
+  27, 29, 40, 62, 65, 67, 69, 71, 80, 86, 90, 97, 99, 102, 104, 109, 118,
+  122, 124, 130, 134, 135, 139, 142, 144, 149, 153, 154, 168, 173, 174,
+  178, 184, 188, 193, 203, 210, 214, 235, 243, 245, 249, 263, 272, 298,
+  303, 304, 315, 319, 325, 328, 344, 349, 351, 352, 353, 355, 358, 370,
+  373, 378, 379, 380, 382, 385, 393, 398, 407, 408, 413, 416, 417, 418,
+  426, 433, 435, 438, 449, 455, 457, 458, 470, 472, 476, 482, 483, 484,
+  486, 487, 489, 491, 495, 497, 500, 503, 504, 506, 511, 516, 529, 531,
+  533, 543, 545, 546, 552, 557, 562, 564, 565, 566, 571, 572, 574, 584,
+  585, 586, 591, 595, 598, 603, 610, 613, 617, 631, 638, 643, 663, 668,
+  669, 671, 674, 695, 701, 709, 711, 712, 714, 715, 718, 719, 720, 726,
+  735, 738, 744, 745, 749, 753, 755, 759, 768, 772, 782, 821, 823, 824,
+  827, 831, 832, 878, 882, 883, 886, 898, 900, 921, 928, 939, 942, 949,
+  951, 963, 968, 981, 988, 992, 1000, 1007, 1008, 1010, 1014, 1020, 1023
+)
+
+afro_sun <- afro_sun |>
+  mutate(
+    doc_id_num = as.integer(str_extract(doc_id, "\\d+")),
+    categories = case_when(
+      doc_id_num %in% kwic_ids & !doc_id_num %in% exclude_ids ~ "beating_injury",
+      TRUE ~ NA_character_
+    )
+  )
+
+# Quick check
+afro_sun |> count(categories)
+```
+
+Checking how many articles are in the beating_injury codde
+
+```{r}
+afro_sun %>% 
+  filter(categories == "beating_injury") %>% 
+  count(pubtitle)
+#The Afro had 39 articles related to abuse and The Sun had 21 articles 
+#The Afro 39/319 = 12.2% of articles, TBS: 21/711 = 2.9% of articles
+
+```
+
+
+
+[Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
+
+```{r}
+media_narratives <- kwic(my_tokens, 
+                         pattern = c("media", "reporter", "newspaper", "journalist"), 
+                         valuetype = "fixed") |> 
+  as.data.frame() |>
+  mutate(doc_id = docname)
+
+quanteda_df_llm <- kwic(my_tokens, phrase(c("lynch|hung|hang(ed|ing)|executed?|execution|mob\\s+law|vigilance\\s+committee")), window = 20, valuetype = "regex") %>% as.data.frame() |> 
+  distinct(docname,  .keep_all = TRUE)
+
+#hanged became changed - get rid of the question mark, can adapt this - use AI, I want a regular expression that doesn't give me change or hungry. Rob used this code for lynching project. Do this sort of examination of the data. Move KWIC into code. 
+```
+
+[Create Datatable]{style="font-size: 18px; font-weight: bold;"}
+
+```{r}
+
+media_narratives_table <- media_narratives |> 
+  select(doc_id, pre, keyword, post)
+
+datatable(media_narratives_table,
+          caption = "Journalism Terms in Context",
+          options = list(pageLength = 20))
+
+```
+
+
 
 ### Count the titles
 
@@ -184,7 +345,7 @@ letters <- afro_sun |>
 # Quick view of any entry by row
 
 ```{r}
-wrapped_text <- strwrap(as.character(letters$full_text[1]), width = 60)
+wrapped_text <- strwrap(as.character(letters$full_text[35]), width = 60)
 writeLines(wrapped_text, "temp_text.txt")
 file.edit("temp_text.txt")
 
@@ -610,143 +771,6 @@ datatable(spacy_adj_noun_counts,
 <br>
 
 [Process Text Corpus Object]{style="font-size: 18px; font-weight: bold;"}
-
-```{r}
-#change to afro_sun
-# Create a unique document ID for each article
-afro_sun <- afro_sun |>
-  mutate(doc_id = paste0("article_", row_number()))
-
-# Create a quanteda corpus using the text column
-library(quanteda)
-#Look into documentation for quanteda to figure out how to add metadata to corpus object for the quick results
-
-my_corpus <- corpus(afro_sun, text_field = "clean_text")
-
-# Add metadata (optional but useful)
-docvars(my_corpus)$yearmo <- afro_sun$yearmo
-```
-
-[Search for the term 'media'] {style="font-size: 18px; font-weight: bold;"}
-
-```{r}
-# Tokenize corpus
-my_tokens <- tokens(my_corpus)
-
-# KWIC search
-kwic_media <- kwic(my_tokens, pattern = "media", valuetype = "fixed") |> 
-  as.data.frame() |>
-  mutate(doc_id = docname)
-
-kwic_beating <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |> 
-  as.data.frame() |>
-  mutate(doc_id = docname)
-
-#Maybe try to add which paper is reporting - see if there is a way to add back meta data fields
-
-kwic_beating_injury <- kwic(my_tokens, 
-                     pattern = c("\\bbeat(ing|en|s)?\\b", "\\bhit(ting)?\\b", "\\b(struck|strike|strikes|striking)\\b", 
-                                 "\\bbludgeon(ed|ing|s)?\\b", "\\b(shot|shooting)\\b", "\\binjur(ed|y|ies|ing)\\b"), 
-                     valuetype = "regex",
-                     window = 20) |> 
-  as.data.frame() |>
-  mutate(doc_id = docname) |>
-  filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
-#Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating,80 mentions beating but would be better under slavery mention, 86, 90, 97 (includes names of boys), 99, 102 (escapes),104, 109, 122, 124 (boys beat up an elderly man and were sentenced to Cheltenham), 130, 134 (boy is "feeble minded"), 135, 139, 142, 144, 149, 153, 154, 168 (doesn't mention Cheltenham), 173 (boys parents had died and they were living on the streets),       
-#118 - boy commits suicide while convict leased, boy's name is included
-#a Baltimore night club waitress is anxious for MR. MUSE to reimburse her for the money she
-#spent for lawyer's fees to keep his son out of Cheltenham. She can be reached at 1031 McCulloh Street (174), 178 (violating parole), 184, 188, 193,203, 210 (boy beat by his mother instead of going to Cheltenham), 214, 235, 243, 245 (rape charge against four boys for someone in the institution), 249, 263, 272, 298, 303, 304 (man was fired after eating in a white dining room), 315, 319, 325, 328 (pretty sure this is about boys beating up other boys), 344, 349, 351, 352, 353, 355, 358 (said a boy raped the toddler daughter of a white farmer he was working for), 370, 373, 378 (held up a "little white boy" doesn't give same consideration to Black children), 379,380,382,385, 393, 398, 407, 408, 413, 416, 417, 418, 426, 433, 435, 438, 449,455 (mentioned a special dispatch, did Cheltenham have a partnership with The Sun?),457 (a boy was arrested on the complaint of someone from the Charity Organization Society), 458,470,472,476,486, 487(boys escaped),489, 495,491, 497(easy for boys to escape, neighbors are unhappy),500,503,504,506(boys were sentenced to prison for beating up a guard),511(boys attempted to kill teacher to escape),516,529,531,533,543,545,546,552,557,562,564,565,566,571,572,574,584,585, 586,591,595,598,603(boy repeatedly ran away from Cheltenham),610,613,617,631,638,643(University of Maryland using Cheltenham's steady labor supply?),663, 668(State takeover process),669, 671,674,695,701,709(mention of boy working for a farmer),711,712,714,715,718,719,720,726,735,738,744,745,749,753,755,759,768,772,782,821,823,824,827,831,832(letter to the editor about firing superintendent),878,882,883,886, 898, 900, 921,928(says that children are like wild animals), 939,942,949(op ed that says she didn't believe the abuse reports),951,963,968,981(not paying unfit employees),988, 992,1000 (St Mary's can't afford to send more boys to Cheltenham),1007,1008,1010,1014,1020 (frames state takeover to be because inability to reform boys),1023,
-#615 - first Sun article about abuse at the institution, 660 (mentions abuse but focuses more on the "violence of the boys")
-#Not sure about 386 - a Cheltenham official hit a boy with a car but not sure if that was outside of the institution, 440 (a boy killed another boy in the institution). 453 (another case where a boy killed another boy), 855 (mentions cruelty at Cheltenham), 1026(discusses unfair labor usage of boys),1030.
-#482 - a boy murders one of his employers because he doesn't get treated properly 
-#figure out ways to tighten up the search. 483 (says that they made him do intense farm work and didn't pay him, and talks about how bad Cheltenham was and that the bigger boys made the little boys do whatever they wanted, were going to lynch him), 484,  
-#Maybe it would be interesting to explore WHY a boy got sent to Cheltenham, I've seen passing a bad dollar, vagrancy etc. Also different way they describe the boys. 
-
-```
-
-Creating case_when function to add codes
-
-```{r}
-# Get the doc_id_nums from the kwic search
-kwic_ids <- kwic_beating_injury |>
-  mutate(doc_id_num = as.integer(str_extract(doc_id, "\\d+"))) |>
-  dplyr::pull(doc_id_num) |>
-  unique()
-
-# Doc IDs to exclude
-exclude_ids <- c(
-  27, 29, 40, 62, 65, 67, 69, 71, 80, 86, 90, 97, 99, 102, 104, 109, 118,
-  122, 124, 130, 134, 135, 139, 142, 144, 149, 153, 154, 168, 173, 174,
-  178, 184, 188, 193, 203, 210, 214, 235, 243, 245, 249, 263, 272, 298,
-  303, 304, 315, 319, 325, 328, 344, 349, 351, 352, 353, 355, 358, 370,
-  373, 378, 379, 380, 382, 385, 393, 398, 407, 408, 413, 416, 417, 418,
-  426, 433, 435, 438, 449, 455, 457, 458, 470, 472, 476, 482, 483, 484,
-  486, 487, 489, 491, 495, 497, 500, 503, 504, 506, 511, 516, 529, 531,
-  533, 543, 545, 546, 552, 557, 562, 564, 565, 566, 571, 572, 574, 584,
-  585, 586, 591, 595, 598, 603, 610, 613, 617, 631, 638, 643, 663, 668,
-  669, 671, 674, 695, 701, 709, 711, 712, 714, 715, 718, 719, 720, 726,
-  735, 738, 744, 745, 749, 753, 755, 759, 768, 772, 782, 821, 823, 824,
-  827, 831, 832, 878, 882, 883, 886, 898, 900, 921, 928, 939, 942, 949,
-  951, 963, 968, 981, 988, 992, 1000, 1007, 1008, 1010, 1014, 1020, 1023
-)
-
-afro_sun <- afro_sun |>
-  mutate(
-    doc_id_num = as.integer(str_extract(doc_id, "\\d+")),
-    categories = case_when(
-      doc_id_num %in% kwic_ids & !doc_id_num %in% exclude_ids ~ "beating_injury",
-      TRUE ~ NA_character_
-    )
-  )
-
-# Quick check
-afro_sun |> count(categories)
-```
-
-Checking how many articles are in the beating_injury codde
-
-```{r}
-afro_sun %>% 
-  filter(categories == "beating_injury") %>% 
-  count(pubtitle)
-#The Afro had 39 articles related to abuse and The Sun had 21 articles 
-#The Afro 39/319 = 12.2% of articles, TBS: 21/711 = 2.9% of articles
-
-```
-
-```{r}
-wrapped_text <- strwrap(as.character(afro_sun$clean_text[1026]), width = 60) %>% 
-writeLines(wrapped_text, "temp_text.txt") %>% 
-file.edit("temp_text.txt")
-```
-
-[Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
-
-```{r}
-media_narratives <- kwic(my_tokens, 
-                         pattern = c("media", "reporter", "newspaper", "journalist"), 
-                         valuetype = "fixed") |> 
-  as.data.frame() |>
-  mutate(doc_id = docname)
-
-quanteda_df_llm <- kwic(my_tokens, phrase(c("lynch|hung|hang(ed|ing)|executed?|execution|mob\\s+law|vigilance\\s+committee")), window = 20, valuetype = "regex") %>% as.data.frame() |> 
-  distinct(docname,  .keep_all = TRUE)
-
-#hanged became changed - get rid of the question mark, can adapt this - use AI, I want a regular expression that doesn't give me change or hungry. Rob used this code for lynching project. Do this sort of examination of the data. Move KWIC into code. 
-```
-
-[Create Datatable]{style="font-size: 18px; font-weight: bold;"}
-
-```{r}
-
-media_narratives_table <- media_narratives |> 
-  select(doc_id, pre, keyword, post)
-
-datatable(media_narratives_table,
-          caption = "Journalism Terms in Context",
-          options = list(pageLength = 20))
-
-```
 
 ::: {style="text-align: center; color: #1FB0C4; font-weight: bold;"}
 # Starting Your Own Project?
