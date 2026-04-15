@@ -67,6 +67,7 @@ afro_sun <- read_csv("./input/afro_sun_articles_april_9.csv")
 ```
 
 #KWIC search
+
 ```{r}
 #change to afro_sun
 # Create a unique document ID for each article
@@ -97,6 +98,7 @@ kwic_broom <- kwic(my_tokens, pattern = "broom", valuetype = "regex",window = 20
 ```
 
 ### Examine a single article
+
 ```{r}
 afro_sun$clean_text[35] |>
   strwrap(width = 60) |>
@@ -104,7 +106,6 @@ afro_sun$clean_text[35] |>
 
 file.edit("temp_text.txt")
 ```
-
 
 ```{r}
 kwic_broom2 <- kwic(my_tokens, 
@@ -115,9 +116,8 @@ kwic_broom2 <- kwic(my_tokens,
   mutate(doc_id = docname)
 ```
 
-
-
 ## Searches by Ela, Akira, Nina
+
 ```{r}
 kwic_beating <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |> 
   as.data.frame() |>
@@ -195,8 +195,6 @@ afro_sun %>%
 
 ```
 
-
-
 [Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
 
 ```{r}
@@ -224,8 +222,6 @@ datatable(media_narratives_table,
           options = list(pageLength = 20))
 
 ```
-
-
 
 ### Count the titles
 
