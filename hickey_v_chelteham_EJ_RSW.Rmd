@@ -1,9 +1,13 @@
 ---
 title: "hickey v cheltenham deaths"
 author: "Wells"
-date: "2026-02-26"
+date: "2026-04-15"
 output: html_document
 ---
+
+This notebook combines he death certificate data with the annual report data to arrive at a best estimate of total deaths at Cheltenham. The key challenge is that the annual reports are biennial for many years, so we need to account for that when comparing against the death certificate counts.
+
+We calculate 243 deaths at Cheltenham, which is higher than the 220 reported in the annual reports alone. 
 
 ### Load libraries
 
@@ -23,11 +27,9 @@ library(googlesheets4)
 library(formattable)
 ```
 
-#death certificates
+# Import death certificates
 
 ```{r}
-library(googlesheets4)
-
 gs4_deauth()
 
 death_certs <- read_sheet("https://docs.google.com/spreadsheets/d/1Qu7FSUzCAeU4gdZ9BpIvfxI5kBp5rAOgEiaQ2h0ff4k/edit?gid=0#gid=0") |> 
@@ -66,6 +68,79 @@ hickey_deaths <- read_sheet("https://docs.google.com/spreadsheets/d/1FnXL2Biktao
 
 ```
 
+# Streamlined workflow 
+This combines the data and arrives directly at the 243 number
+
+
+
+
+
+
+```{r}
+# --- Config ---
+biennial_years <- c(1903, 1907, 1909, 1911, 1913, 1915, 1917, 1930, 1932, 1934, 1936, 1938)
+biennial_prev_years <- biennial_years - 1
+
+# --- Step 1: Death cert counts per year (Cheltenham only) ---
+cert_counts <- death_certs |>
+  filter(facility == "cheltenham") |>
+  count(death_year, name = "death_cert")
+
+# --- Step 2: Join annual report deaths to cert counts ---
+joined <- chelt_deaths |>
+  filter(!is.na(year_of_report)) |>
+  select(year_of_report, total_deaths) |>
+  full_join(cert_counts, by = c("year_of_report" = "death_year")) |>
+  arrange(year_of_report)
+
+# --- Step 3: For biennial years, add the previous year's certs ---
+prev_year_certs <- joined |>
+  filter(year_of_report %in% biennial_prev_years) |>
+  transmute(
+    biennial_year  = year_of_report + 1,
+    cert_prev_year = death_cert
+  )
+
+# --- Step 4: Calculate best estimate per row ---
+deaths_summary <- joined |>
+  mutate(
+    is_biennial  = year_of_report %in% biennial_years,
+    is_prev_year = year_of_report %in% biennial_prev_years
+  ) |>
+  filter(!is_prev_year) |>  # drop years already absorbed into biennial totals
+  left_join(prev_year_certs, by = c("year_of_report" = "biennial_year")) |>
+  mutate(
+    # Combine two years of certs for biennial rows
+    cert_total = case_when(
+      is_biennial & !(is.na(death_cert) & is.na(cert_prev_year)) ~
+        coalesce(death_cert, 0) + coalesce(cert_prev_year, 0),
+      is_biennial ~ NA_real_,
+      TRUE ~ death_cert
+    ),
+    # Best estimate: whichever source is larger
+    best_estimate = case_when(
+      !is.na(total_deaths) & !is.na(cert_total) ~ pmax(total_deaths, cert_total),
+      !is.na(total_deaths)                       ~ total_deaths,
+      !is.na(cert_total)                         ~ cert_total,
+      TRUE                                        ~ NA_real_
+    )
+  )
+
+# --- Step 5: Total ---
+cat("Total deaths:", sum(deaths_summary$best_estimate, na.rm = TRUE), "\n")
+cat("Rows with no data:", sum(is.na(deaths_summary$best_estimate)), "\n")
+```
+
+#Ela - Tiasia: answer this question please
+But looking at your data I notice some oddities — for instance 1910 appears as its own row with total_deaths = 2, even though 1909 and 1911 are both biennial years. And 1916 appears with no deaths, sitting between biennial years 1915 and 1917.
+Are those genuinely standalone annual reports, or might they be data entry artifacts? That could affect whether your biennial logic is handling them correctly.
+
+
+
+
+# Old code below
+
+
 #fact check
 ```{r}
 dc_total <- death_certs |> 
@@ -92,28 +167,15 @@ chelt_death_cert_totals <- death_certs |>
   arrange(desc(death_year)) |> 
   left_join(chelt_deaths, by=c("death_year"="year_of_report")) |> 
   select(death_year, total_deaths,  death_cert_total) |> 
-  mutate(death_certs_bigger = if_else(death_cert_total > total_deaths, "Yes", "No"))
+  # mutate(death_certs_bigger = if_else(death_cert_total > total_deaths, "Yes", "No"))
+  mutate(death_certs_bigger = if_else(is.na(total_deaths) | death_cert_total > total_deaths, "Yes", "No"))
 
 #this join keeps all death cert and all annual report entries
 
 ```
 
 
-# I dont understand why you did this below - seems to duplicate the above
-```{r}
-chelt_death_cert <- death_certs %>% 
-    select(death_year,facility) %>% 
-  filter(facility =="cheltenham") %>% 
-  arrange(desc(death_year))
 
-chelt_death_cert_count <- chelt_death_cert %>% 
-  group_by(death_year) %>% 
-  count()
-chelt_death_cert_count <-chelt_death_cert_count %>% 
-rename( year_of_report =death_year)
- 
-  
-```
 
 ```{r}
 updated_chelt_death_cert <- chelt_deaths %>%
@@ -196,7 +258,7 @@ missing1 <- missing %>%
     )
   )
 
-write_csv(missing1, "missing_years_analysis.csv")
+# write_csv(missing1, "missing_years_analysis.csv")
 
 
 missing_pia <- missing1 |> 
@@ -204,7 +266,7 @@ missing_pia <- missing1 |>
   arrange(year_of_report) |> 
   select(year_of_report, status) 
 
-write_csv(missing_pia, "missing_reports_pia_request.csv")
+# write_csv(missing_pia, "missing_reports_pia_request.csv")
 
 
 ```
@@ -212,7 +274,7 @@ write_csv(missing_pia, "missing_reports_pia_request.csv")
 
 
 
-#Claude
+# Totals
 
 ```{r}
 biennial_years   <- c(1903, 1907, 1909, 1911, 1913, 1915, 1917, 1930, 1932, 1934, 1936, 1938)
@@ -377,4 +439,19 @@ cat("Total Cheltenham deaths reported by the Afro:", afro_total, "\n")
 
 https://github.com/ejalil/cheltehnam_jalil/blob/main/hickey_v_chelteham_EJ_RSW.Rmd
 
+# Notes and Old Code
+# I dont understand why you did this below - seems to duplicate the above
+```{r}
+chelt_death_cert <- death_certs %>% 
+    select(death_year,facility) %>% 
+  filter(facility =="cheltenham") %>% 
+  arrange(desc(death_year))
 
+chelt_death_cert_count <- chelt_death_cert %>% 
+  group_by(death_year) %>% 
+  count()
+chelt_death_cert_count <-chelt_death_cert_count %>% 
+rename( year_of_report =death_year)
+ 
+  
+```
