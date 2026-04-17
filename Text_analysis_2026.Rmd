@@ -195,6 +195,46 @@ afro_sun %>%
 
 ```
 
+## Escape Search
+
+```{r}
+kwic_escape_recapture <- kwic(my_tokens,
+                     pattern = c("\\bescape(d|s|ing)?\\b", "\\bescap(ee|ees)?\\b",
+                                 "\\bflee(ing)?\\b", "\\bfled\\b", "\\babscond(ed|ing|s)?\\b",
+                                 "\\bbroke\\s+out\\b", "\\brecaptur(ed|e|ing|es)?\\b",
+                                 "\\bcaptur(ed|e|ing|es)?\\b", "\\bcaught\\b",
+                                 "\\bapprehend(ed|ing|s)?\\b"),
+                     valuetype = "regex",
+                     window = 20) |>
+  as.data.frame() |>
+  mutate(doc_id = docname) |>
+  filter(
+    # Remove 'caught' when it's clearly not about recapture (e.g. "caught a cold", "caught fish")
+    !grepl("^caught$", keyword, ignore.case = TRUE) |
+      grepl("prisoner|convict|inmate|felon|fugitive|gaol|prison|custody|escaped|abscond", 
+            paste(pre, post), ignore.case = TRUE),
+    
+    # Remove 'captured' when used in military/metaphorical sense without prison context
+    !grepl("^captur", keyword, ignore.case = TRUE) |
+      grepl("prisoner|convict|inmate|escaped|gaol|prison|custody|fugitive|abscond|recaptur",
+            paste(pre, post), ignore.case = TRUE),
+    
+    # Remove 'fled' when clearly not a prison escape (e.g. "fled the country" in political context)
+    !grepl("^fled$", keyword, ignore.case = TRUE) |
+      grepl("prisoner|convict|inmate|gaol|prison|custody|escaped|abscond|Cheltenham",
+            paste(pre, post), ignore.case = TRUE)
+  )
+#26(Saying boys aren't escaping),41,47(saying the boy escaped from homes and sent to Cheltenham),69(boy stole father's money and escaped from home),72(says the broom factory doesn't allow for escape),
+```
+
+```{r}
+afro_sun$clean_text[73] |>
+  strwrap(width = 60) |>
+  writeLines("temp_text.txt")
+
+file.edit("temp_text.txt")
+```
+
 [Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
 
 ```{r}
