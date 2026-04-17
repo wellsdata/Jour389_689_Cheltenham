@@ -7,7 +7,7 @@ output: html_document
 
 This notebook combines he death certificate data with the annual report data to arrive at a best estimate of total deaths at Cheltenham. The key challenge is that the annual reports are biennial for many years, so we need to account for that when comparing against the death certificate counts.
 
-We calculate 243 deaths at Cheltenham, which is higher than the 220 reported in the annual reports alone. 
+We calculate 243 deaths at Cheltenham, which is higher than the 220 reported in the annual reports alone.
 
 ### Load libraries
 
@@ -68,13 +68,9 @@ hickey_deaths <- read_sheet("https://docs.google.com/spreadsheets/d/1FnXL2Biktao
 
 ```
 
-# Streamlined workflow 
+# Streamlined workflow
+
 This combines the data and arrives directly at the 243 number
-
-
-
-
-
 
 ```{r}
 # --- Config ---
@@ -87,6 +83,7 @@ cert_counts <- death_certs |>
   count(death_year, name = "death_cert")
 
 # --- Step 2: Join annual report deaths to cert counts ---
+#EJ note - it changes report deaths to total deaths to flag
 joined <- chelt_deaths |>
   filter(!is.na(year_of_report)) |>
   select(year_of_report, total_deaths) |>
@@ -131,17 +128,30 @@ cat("Total deaths:", sum(deaths_summary$best_estimate, na.rm = TRUE), "\n")
 cat("Rows with no data:", sum(is.na(deaths_summary$best_estimate)), "\n")
 ```
 
-#Ela - Tiasia: answer this question please
-But looking at your data I notice some oddities — for instance 1910 appears as its own row with total_deaths = 2, even though 1909 and 1911 are both biennial years. And 1916 appears with no deaths, sitting between biennial years 1915 and 1917.
-Are those genuinely standalone annual reports, or might they be data entry artifacts? That could affect whether your biennial logic is handling them correctly.
+#Ela - Tiasia: answer this question please But looking at your data I notice some oddities — for instance 1910 appears as its own row with total_deaths = 2, even though 1909 and 1911 are both biennial years. And 1916 appears with no deaths, sitting between biennial years 1915 and 1917. Are those genuinely standalone annual reports, or might they be data entry artifacts? That could affect whether your biennial logic is handling them correctly.
 
+#Ela finding
 
+Neither row appears in this data at all, which means they were correctly filtered out as `biennial_prev_years` (1909+1 and 1915+1 respectively). That part of the logic is working fine.
 
+The more important question is those **9 rows with no data at all**:
+
+| Year                   | Likely explanation                                |
+|------------------------|---------------------------------------------------|
+| 1873, 1874             | Probably pre-digitization / earliest records      |
+| 1884, 1890, 1894       | Gap in both annual reports and death certs        |
+| 1919, 1920, 1922, 1924 | Post-WWI gap — no annual reports and sparse certs |
+
+These 9 years are genuinely unaccounted for. If Cheltenham was operating during those years (which it almost certainly was), there were real deaths not captured in your 243 figure. That's worth a methodological note in your reporting — **243 is a floor, not a ceiling**.
+
+```{r}
+write.csv(deaths_summary, "deaths_summary.csv", row.names = FALSE)
+```
 
 # Old code below
 
-
 #fact check
+
 ```{r}
 dc_total <- death_certs |> 
   filter(facility =="cheltenham") |> 
@@ -157,8 +167,8 @@ report_deaths <-  sum(chelt_deaths$total_deaths, na.rm=TRUE)
 cat("Total report deaths:", report_deaths, "\n")
 ```
 
-
 #delete this after cleaning up the code below
+
 ```{r}
 chelt_death_cert_totals <- death_certs |> 
   filter(facility =="cheltenham") |> 
@@ -173,9 +183,6 @@ chelt_death_cert_totals <- death_certs |>
 #this join keeps all death cert and all annual report entries
 
 ```
-
-
-
 
 ```{r}
 updated_chelt_death_cert <- chelt_deaths %>%
@@ -224,6 +231,7 @@ joined_chelt <- joined_chelt %>%
 ```
 
 # Total: 264
+
 ```{r}
 
 joined_chelt |> 
@@ -235,6 +243,7 @@ joined_chelt |>
 Need to account for the biennial years
 
 Table of missing years
+
 ```{r}
 missing <- joined_chelt %>%
   filter(is.na(report_deaths)) %>%
@@ -270,9 +279,6 @@ missing_pia <- missing1 |>
 
 
 ```
-
-
-
 
 # Totals
 
@@ -326,14 +332,13 @@ cat("Rows with no data from either source:", missing_rows, "\n")
 
 ```
 
-Claude explanation:
-Looking at the problem: for biennial years (e.g. 1907), `report_deaths` covers **two** years (1906+1907), but `death_cert` in `joined_chelt` only reflects the single report year. So you need to:
+Claude explanation: Looking at the problem: for biennial years (e.g. 1907), `report_deaths` covers **two** years (1906+1907), but `death_cert` in `joined_chelt` only reflects the single report year. So you need to:
 
-1. Pull the cert counts for both constituent years of each biennial pair
-2. Sum them before comparing against the biennial report total
-3. Exclude the "previous year" rows from separate counting (they're already rolled into the biennial)
+1.  Pull the cert counts for both constituent years of each biennial pair
+2.  Sum them before comparing against the biennial report total
+3.  Exclude the "previous year" rows from separate counting (they're already rolled into the biennial)
 
-```r
+``` r
 biennial_years   <- c(1903, 1907, 1909, 1911, 1913, 1915, 1917, 1930, 1932, 1934, 1936, 1938)
 biennial_prev_years <- biennial_years - 1   # years already "absorbed" into the biennial total
 
@@ -384,20 +389,19 @@ cat("Rows with no data from either source:", missing_rows, "\n")
 
 **Key design decisions:**
 
-| Situation | Logic |
-|---|---|
-| Biennial year, both sources present | `pmax(report_deaths, cert_curr + cert_prev)` |
-| Biennial year, only report | use `report_deaths` |
-| Biennial year, both cert years missing | `NA` (not 0) |
-| Regular year | `pmax(report_deaths, death_cert)` ignoring whichever is `NA` |
-| Previous year of a biennial (e.g. 1906) | **filtered out** — already counted in the 1907 row |
+| Situation                               | Logic                                                        |
+|------------------------------------|------------------------------------|
+| Biennial year, both sources present     | `pmax(report_deaths, cert_curr + cert_prev)`                 |
+| Biennial year, only report              | use `report_deaths`                                          |
+| Biennial year, both cert years missing  | `NA` (not 0)                                                 |
+| Regular year                            | `pmax(report_deaths, death_cert)` ignoring whichever is `NA` |
+| Previous year of a biennial (e.g. 1906) | **filtered out** — already counted in the 1907 row           |
 
 The `coalesce(..., 0)` on the cert sum treats a missing cert year as 0 *only when the other cert year has data*; that's intentional — a missing cert year for a biennial where the other year is present means partial coverage, not complete absence.
 
-
 # Afro Deaths
-total deaths reported in the Afro and Sun, and align those with these total above.
 
+total deaths reported in the Afro and Sun, and align those with these total above.
 
 ```{r}
 afro_deaths <- read_sheet("https://docs.google.com/spreadsheets/d/1375Kt-61NU1FFV4pshCEv0EV3ZN4x6dWM31_qKGHxzo/edit?usp=sharing") |> 
@@ -432,15 +436,12 @@ cat("Total Cheltenham deaths reported by the Afro:", afro_total, "\n")
 
 ```
 
-
-
-
-
-
-https://github.com/ejalil/cheltehnam_jalil/blob/main/hickey_v_chelteham_EJ_RSW.Rmd
+<https://github.com/ejalil/cheltehnam_jalil/blob/main/hickey_v_chelteham_EJ_RSW.Rmd>
 
 # Notes and Old Code
+
 # I dont understand why you did this below - seems to duplicate the above
+
 ```{r}
 chelt_death_cert <- death_certs %>% 
     select(death_year,facility) %>% 
