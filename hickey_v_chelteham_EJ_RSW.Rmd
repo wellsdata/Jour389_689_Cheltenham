@@ -156,15 +156,11 @@ hickey_deaths <- hickey_deaths %>%
 hickey_deaths_new <- hickey_deaths %>% 
   select(year_of_report,total_deaths)
 
-chelt_hickey <- hickey_deaths_new |>
+chelt_hickey_n <- hickey_deaths_new |>
   full_join(deaths_summary, by = "year_of_report")
-chelt_hickey <- chelt_hickey %>% 
+chelt_hickey_n <- chelt_hickey_n %>% 
   select(year_of_report,total_deaths.x,best_estimate)
-
-chelt_hickey <- chelt_hickey |>
-  rename(hickey_deaths = total_deaths.x,
-         chelt_deaths = best_estimate)
-write.csv(deaths_summary, "chelt_hickey.csv", row.names = FALSE)
+write.csv(chelt_hickey_n, "chelt_hickey_n.csv", row.names = FALSE)
 
 ```
 

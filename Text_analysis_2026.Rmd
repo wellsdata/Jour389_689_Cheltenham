@@ -228,11 +228,18 @@ kwic_escape_recapture <- kwic(my_tokens,
 ```
 
 ```{r}
-afro_sun$clean_text[73] |>
+afro_sun$clean_text[615] |>
   strwrap(width = 60) |>
   writeLines("temp_text.txt")
 
 file.edit("temp_text.txt")
+```
+
+## Aubrey Brunson Search
+
+```{r}
+afro_sun[grepl("Aubrey Brunson", afro_sun$clean_text, ignore.case = TRUE), c("title", "pubtitle")]
+#three articles popped up, all from afro_sun
 ```
 
 [Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
