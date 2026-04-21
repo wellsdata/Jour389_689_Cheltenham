@@ -139,7 +139,7 @@ Neither row appears in this data at all, which means they were correctly filtere
 The more important question is those **9 rows with no data at all**:
 
 | Year                   | Likely explanation                                |
-|------------------------|------------------------------------------------|
+|------------------------|-----------------------------------------------|
 | 1873, 1874             | Probably pre-digitization / earliest records      |
 | 1884, 1890, 1894       | Gap in both annual reports and death certs        |
 | 1919, 1920, 1922, 1924 | Post-WWI gap — no annual reports and sparse certs |

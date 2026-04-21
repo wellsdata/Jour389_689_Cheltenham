@@ -182,6 +182,9 @@ afro_sun <- afro_sun |>
 
 # Quick check
 afro_sun |> count(categories)
+
+beating <- afro_sun %>% 
+  filter(categories=="beating_injury")
 ```
 
 Checking how many articles are in the beating_injury codde
