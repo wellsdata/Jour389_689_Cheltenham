@@ -5,7 +5,7 @@ date: "2026-04-15"
 output: html_document
 ---
 
-This notebook combines he death certificate data with the annual report data to arrive at a best estimate of total deaths at Cheltenham. The key challenge is that the annual reports are biennial for many years, so we need to account for that when comparing against the death certificate counts.
+This notebook combines the death certificate data with the annual report data to arrive at a best estimate of total deaths at Cheltenham. The key challenge is that the annual reports are biennial for many years, so we need to account for that when comparing against the death certificate counts.
 
 We calculate 243 deaths at Cheltenham, which is higher than the 220 reported in the annual reports alone.
 
@@ -65,6 +65,8 @@ hickey_deaths <- read_sheet("https://docs.google.com/spreadsheets/d/1FnXL2Biktao
       na_if("N/A") |>                # Handle "N/A"
       as.numeric()                   # Finally, turn it into a number
   ))
+
+#in row 10, it is an NA value for the year but it says there is one death. same for row 38 and row 41, this may mean the count is actually 23. Checked back to the original spreadsheet and both of those NA values had a date, so I will put that back in my data viz. Only one date had 1870 twice, so just need to confirm that it is 25 and not 27. 
 
 ```
 
@@ -137,7 +139,7 @@ Neither row appears in this data at all, which means they were correctly filtere
 The more important question is those **9 rows with no data at all**:
 
 | Year                   | Likely explanation                                |
-|------------------------|---------------------------------------------------|
+|------------------------|------------------------------------------------|
 | 1873, 1874             | Probably pre-digitization / earliest records      |
 | 1884, 1890, 1894       | Gap in both annual reports and death certs        |
 | 1919, 1920, 1922, 1924 | Post-WWI gap — no annual reports and sparse certs |
