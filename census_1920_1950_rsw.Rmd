@@ -1,0 +1,51 @@
+---
+title: "census 1920-1950"
+author: "Korzak/Wells"
+date: "2026-03-25"
+output: html_document
+---
+
+```{r include=FALSE}
+library(tidyverse)
+library(stringr)
+library(readr)
+library(purrr)
+library(googlesheets4)
+library(janitor)
+library(dbplyr)
+
+#install.packages("DT")
+library(DT)
+```
+
+# Import 1920-1950 U.S. Census data
+### Filtered to just Cheltenham inmates and staff (Brandywine survey)
+### 646 results
+```{r include=FALSE}
+census_all <- read_csv("./output/census_1920_50.csv")
+```
+
+
+
+```{r include=FALSE}
+#Trim DF
+census_dt <- census_all |> 
+  select(
+    decade,
+    full_name,
+    birth_date,
+    role
+  )
+```
+
+
+
+```{r}
+datatable(census_dt,
+           caption = "Cheltenham Boys, Staff in Census, 1920-1950",
+ options = list(pageLength = 25))
+
+```
+
+
+

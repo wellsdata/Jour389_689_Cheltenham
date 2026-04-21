@@ -1,13 +1,4 @@
 ---
-title: "R Notebook"
-output: html_notebook
----
-
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
-
----
 title: "census 1920"
 author: "Korzak"
 date: "2026-03-25"
@@ -22,6 +13,9 @@ library(purrr)
 library(googlesheets4)
 library(janitor)
 library(dbplyr)
+
+#install.packages("DT")
+library(DT)
 ```
 
 #Import
@@ -77,27 +71,9 @@ census_1920 <- bind_rows(
 
 ```
 
-analytics
-```{r}
-
-census_1920 |> 
-  count(relationship_to_head)
-
-```
 
 
-```{r}
-census_1920_filter <- census_1920 |>
-  filter(relationship_to_head %in% c("Inmate", "Officer", "Servant"))
-  
-  
-```
-
-#Import
-```{r}
-census_1930 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRpA55o_MuMdwxFfrvAzxAlfxzFcZ12s6ucgSJbPW4T0Un2baPeieyyD40tJOzuobvfnvWE6ID0bDJK/pub?gid=117440304&single=true&output=csv")
-```
-decade
+#Import 1930
 ```{r}
 census_1930 <- read_csv(
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRpA55o_MuMdwxFfrvAzxAlfxzFcZ12s6ucgSJbPW4T0Un2baPeieyyD40tJOzuobvfnvWE6ID0bDJK/pub?gid=117440304&single=true&output=csv"
@@ -106,12 +82,8 @@ census_1930 <- read_csv(
   clean_names() |>
   mutate(decade = 1930)
 ```
-```{r}
-census_1940 <- read.csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTK4dftB1F7559Vz2AF5OYbJOtO-3T9ozBIVuXpCxZXyR7hayYMd0-XGm_JYkRKH79vVkVA2vsSEopp/pub?gid=1253163322&single=true&output=csv")
 
-```
-
-decade
+#Import 1940
 ```{r}
 census_1940 <- read_csv(
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vTK4dftB1F7559Vz2AF5OYbJOtO-3T9ozBIVuXpCxZXyR7hayYMd0-XGm_JYkRKH79vVkVA2vsSEopp/pub?gid=1253163322&single=true&output=csv"
@@ -121,10 +93,7 @@ census_1940 <- read_csv(
   mutate(decade = 1940)
 ```
 
-```{r}
-census_1950 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vR7YNas45_726HtNk1Sg4ZDVYmClCldXH9xZKnDyas7-ppm9cn_daFXrcTk-jX_g764oZqPY-Q449DI/pub?gid=1760186365&single=true&output=csv")
-```
-decade
+# Import 1950
 ```{r}
 census_1950 <- read_csv(
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7YNas45_726HtNk1Sg4ZDVYmClCldXH9xZKnDyas7-ppm9cn_daFXrcTk-jX_g764oZqPY-Q449DI/pub?gid=1760186365&single=true&output=csv"
@@ -133,36 +102,49 @@ census_1950 <- read_csv(
   clean_names() |>
   mutate(decade = 1950)
 ```
+# Combine 1920-1950
 ```{r}
 census_all <- bind_rows(
-  census_1920_filter,
+  census_1920,
   census_1930,
   census_1940,
-  census_1950
-)
+  census_1950)
+write_csv(census_all, "./output/census_raw_1920_50.csv")
 ```
 
+
 ```{r}
-install.packages("DT")
+#analytics
+
+census_all |> 
+  count(relationship_to_head) |> 
+  arrange(desc(n))
+
 ```
-```{r}
-library(DT)
-```
+
+
 
 ```{r}
 census_dt <- census_all |> 
-  select(
+    filter(relationship_to_head %in% c("Inmate", "Officer", "Servant", "Superintendant", "Employee")) |> 
+  rename(birth_date = birth_like_date, role = relationship_to_head) |> 
+   select(
     decade,
     full_name,
-    birth_like_date,
-    relationship_to_head
+    birth_date,
+    role
   )
+
+write_csv(census_dt, "./output/census_1920_50.csv")
+
+```
+
+```{r}
+datatable(census_dt,
+           caption = "Cheltenham Boys, Staff in Census, 1920-1950",
+ options = list(pageLength = 25))
+
 ```
 
 
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
-
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
-
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
