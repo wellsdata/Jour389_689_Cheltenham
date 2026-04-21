@@ -78,6 +78,10 @@ dc <- dc %>%
                                   primary_death))
 
 
+cheltenham_deaths <- dc |> 
+  select(-combined_notes)
+
+write_csv(cheltenham_deaths, "output/cheltenham_deaths_april_17.csv")
 ```
 
 ## Statistics
