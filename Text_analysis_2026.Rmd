@@ -125,7 +125,7 @@ kwic_beating <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |>
 
 #Maybe try to add which paper is reporting - see if there is a way to add back meta data fields
 
-kwic_beating_injury <- kwic(my_tokens, 
+#Wells notes: This search extracts articles that mention abuse of the boys, including beating, hitting, striking, injury, bludgeoning, shooting. This broad search returned 630 entries which were narrowed to 60 after individual review of these search terms in context. 
                      pattern = c("\\bbeat(ing|en|s)?\\b", "\\bhit(ting)?\\b", "\\b(struck|strike|strikes|striking)\\b", 
                                  "\\bbludgeon(ed|ing|s)?\\b", "\\b(shot|shooting)\\b", "\\binjur(ed|y|ies|ing)\\b"), 
                      valuetype = "regex",
@@ -133,6 +133,18 @@ kwic_beating_injury <- kwic(my_tokens,
   as.data.frame() |>
   mutate(doc_id = docname) |>
   filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
+
+#Wells comments:
+#You might want to keep the following:
+#69, 71 marks abuse but not beating
+#80 mentions beating but would be better under slavery mention,
+#855 (mentions cruelty at Cheltenham)
+
+#These should not be in the abuse list:
+# 1892-04-20 1892 The_Sun Trial of a Boy for Murder
+# 1895-09-06 1895 The_Sun KILLED BY A BRICK
+
+
 #Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating,80 mentions beating but would be better under slavery mention, 86, 90, 97 (includes names of boys), 99, 102 (escapes),104, 109, 122, 124 (boys beat up an elderly man and were sentenced to Cheltenham), 130, 134 (boy is "feeble minded"), 135, 139, 142, 144, 149, 153, 154, 168 (doesn't mention Cheltenham), 173 (boys parents had died and they were living on the streets),       
 #118 - boy commits suicide while convict leased, boy's name is included
 #a Baltimore night club waitress is anxious for MR. MUSE to reimburse her for the money she
@@ -193,10 +205,24 @@ Checking how many articles are in the beating_injury codde
 afro_sun %>% 
   filter(categories == "beating_injury") %>% 
   count(pubtitle)
-#The Afro had 39 articles related to abuse and The Sun had 21 articles 
-#The Afro 39/319 = 12.2% of articles, TBS: 21/711 = 2.9% of articles
+#The Afro 39/319 = 12.2% of articles, TBS: 21/711 = 2.9% of articles.
+
+#Wells notes: This search extracts articles that mention abuse of the boys, including beating, hitting, striking, injury, bludgeoning, shooting. This broad search returned 630 entries which were narrowed to 60 after individual review of these search terms in context. Overall, the Afro had 39 articles related to abuse of the boys, or 12.2% of the paper's total coverage, and The Sun had 21 abuse articles, or 2.9% of its total coverage.
+#As a result, stories about abuse of the boys appeared in the Afro at four times the rate of the Sun
 
 ```
+
+
+### Examine a single article
+
+```{r}
+beating$clean_text[42] |>
+  strwrap(width = 60) |>
+  writeLines("temp_text.txt")
+
+file.edit("temp_text.txt")
+```
+
 
 ## Escape Search
 
