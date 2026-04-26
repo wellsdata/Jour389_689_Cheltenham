@@ -119,20 +119,27 @@ kwic_broom2 <- kwic(my_tokens,
 ## Searches by Ela, Akira, Nina
 
 ```{r}
-kwic_beating <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |> 
+# Option 1: Just the regex version (more comprehensive)
+kwic_beating_injury <- kwic(
+  my_tokens,
+  pattern = c(
+    "\\bbeat(ing|en|s)?\\b",
+    "\\bhit(ting)?\\b",
+    "\\b(struck|strike|strikes|striking)\\b",
+    "\\bbludgeon(ed|ing|s)?\\b",
+    "\\b(shot|shooting)\\b",
+    "\\binjur(ed|y|ies|ing)\\b"
+  ),
+  valuetype = "regex",
+  window = 20
+) |>
   as.data.frame() |>
-  mutate(doc_id = docname)
+  mutate(doc_id = docname) |>
+  filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
 
 #Maybe try to add which paper is reporting - see if there is a way to add back meta data fields
 
 #Wells notes: This search extracts articles that mention abuse of the boys, including beating, hitting, striking, injury, bludgeoning, shooting. This broad search returned 630 entries which were narrowed to 60 after individual review of these search terms in context. 
-                     pattern = c("\\bbeat(ing|en|s)?\\b", "\\bhit(ting)?\\b", "\\b(struck|strike|strikes|striking)\\b", 
-                                 "\\bbludgeon(ed|ing|s)?\\b", "\\b(shot|shooting)\\b", "\\binjur(ed|y|ies|ing)\\b"), 
-                     valuetype = "regex",
-                     window = 20) |> 
-  as.data.frame() |>
-  mutate(doc_id = docname) |>
-  filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
 
 #Wells comments:
 #You might want to keep the following:
@@ -141,8 +148,8 @@ kwic_beating <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |>
 #855 (mentions cruelty at Cheltenham)
 
 #These should not be in the abuse list:
-# 1892-04-20 1892 The_Sun Trial of a Boy for Murder
-# 1895-09-06 1895 The_Sun KILLED BY A BRICK
+# 1892-04-20 1892 The_Sun Trial of a Boy for Murder (453)
+# 1895-09-06 1895 The_Sun KILLED BY A BRICK (440)
 
 
 #Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating,80 mentions beating but would be better under slavery mention, 86, 90, 97 (includes names of boys), 99, 102 (escapes),104, 109, 122, 124 (boys beat up an elderly man and were sentenced to Cheltenham), 130, 134 (boy is "feeble minded"), 135, 139, 142, 144, 149, 153, 154, 168 (doesn't mention Cheltenham), 173 (boys parents had died and they were living on the streets),       
@@ -160,7 +167,6 @@ kwic_beating <- kwic(my_tokens, pattern = "beating", valuetype = "fixed") |>
 Creating case_when function to add codes
 
 ```{r}
-# Get the doc_id_nums from the kwic search
 kwic_ids <- kwic_beating_injury |>
   mutate(doc_id_num = as.integer(str_extract(doc_id, "\\d+"))) |>
   dplyr::pull(doc_id_num) |>
@@ -168,19 +174,20 @@ kwic_ids <- kwic_beating_injury |>
 
 # Doc IDs to exclude
 exclude_ids <- c(
-  27, 29, 40, 62, 65, 67, 69, 71, 80, 86, 90, 97, 99, 102, 104, 109, 118,
+  27, 29, 40, 62, 65, 67, 86, 90, 97, 99, 102, 104, 109, 118,
   122, 124, 130, 134, 135, 139, 142, 144, 149, 153, 154, 168, 173, 174,
   178, 184, 188, 193, 203, 210, 214, 235, 243, 245, 249, 263, 272, 298,
   303, 304, 315, 319, 325, 328, 344, 349, 351, 352, 353, 355, 358, 370,
   373, 378, 379, 380, 382, 385, 393, 398, 407, 408, 413, 416, 417, 418,
-  426, 433, 435, 438, 449, 455, 457, 458, 470, 472, 476, 482, 483, 484,
-  486, 487, 489, 491, 495, 497, 500, 503, 504, 506, 511, 516, 529, 531,
-  533, 543, 545, 546, 552, 557, 562, 564, 565, 566, 571, 572, 574, 584,
-  585, 586, 591, 595, 598, 603, 610, 613, 617, 631, 638, 643, 663, 668,
-  669, 671, 674, 695, 701, 709, 711, 712, 714, 715, 718, 719, 720, 726,
-  735, 738, 744, 745, 749, 753, 755, 759, 768, 772, 782, 821, 823, 824,
-  827, 831, 832, 878, 882, 883, 886, 898, 900, 921, 928, 939, 942, 949,
-  951, 963, 968, 981, 988, 992, 1000, 1007, 1008, 1010, 1014, 1020, 1023
+  426, 433, 435, 438, 440, 449, 453, 455, 457, 458, 470, 472, 476, 482,
+  483, 484, 486, 487, 489, 491, 495, 497, 500, 503, 504, 506, 511, 516,
+  529, 531, 533, 543, 545, 546, 552, 557, 562, 564, 565, 566, 571, 572,
+  574, 584, 585, 586, 591, 595, 598, 603, 610, 613, 617, 631, 638, 643,
+  663, 668, 669, 671, 674, 695, 701, 709, 711, 712, 714, 715, 718, 719,
+  720, 726, 735, 738, 744, 745, 749, 753, 755, 759, 768, 772, 782, 821,
+  823, 824, 827, 831, 832, 878, 882, 883, 886, 898, 900, 921, 928,
+  939, 942, 949, 951, 963, 968, 981, 988, 992, 1000, 1007, 1008, 1010,
+  1014, 1020, 1023
 )
 
 afro_sun <- afro_sun |>
@@ -196,10 +203,11 @@ afro_sun <- afro_sun |>
 afro_sun |> count(categories)
 
 beating <- afro_sun %>% 
-  filter(categories=="beating_injury")
+  filter(categories == "beating_injury")
+#Added 3 back but got rid of 2, so now there's 61 results
 ```
 
-Checking how many articles are in the beating_injury codde
+Checking how many articles are in the beating_injury code
 
 ```{r}
 afro_sun %>% 
@@ -212,17 +220,74 @@ afro_sun %>%
 
 ```
 
+## Adding to the beating data
+
+```{r}
+kwic_whipped <- kwic(my_tokens, 
+                     pattern = c("\\bwhip(ped|ping|s)?\\b", "\\bschad\\b", "\\bstrap(ped|ping|s)?\\b", "\\bbelt(ed|ing|s)?\\b"), 
+                     valuetype = "regex",
+                     window = 20) |> 
+  as.data.frame() |>
+  mutate(doc_id = docname) |>
+  filter(!grepl("\\b(strapping|belting|belt out|conveyor belt|seat belt|tool belt|bootstrap|bootstrapped)\\b", 
+                keyword, ignore.case = TRUE))
+#3 (Saying that the boys are not mistreated),168, 210(boys mom beat him instead of going to Cheltenham),362, 449(talks about boys ),482,484, 491 (father filed for incorrigibility which sentenced the boy to Cheltenham), 495 (boys sentenced to Cheltenham), 516 (says that the charges of mistreatment are "malicious"),531,569,617(court case mention with a Cheltenham official), 661 (talks about Cheltenham court case), 886
+#45(talks about convict leasing), 211 (schad beating), 233 (teacher's dying confession is that he whipped boys)
+#240 (believe that this is a photo gallery, but mentions beating), 872 (kind of talks around the abuse, not sure if it should be included)
+```
+
+## Assigning codes to kwic_whipped
+
+```{r}
+# Get the doc_id_nums from the kwic search
+kwic_whipped_ids <- kwic_whipped |>
+  mutate(doc_id_num = as.integer(str_extract(doc_id, "\\d+"))) |>
+  dplyr::pull(doc_id_num) |>
+  unique()
+
+# Doc IDs to exclude
+exclude_whipped_ids <- c(
+  3, 168, 210, 362, 449, 482, 484, 491, 495, 516, 531, 569, 617, 661, 886
+)
+
+afro_sun <- afro_sun |>
+  mutate(
+    doc_id_num = as.integer(str_extract(doc_id, "\\d+")),
+    categories = case_when(
+      doc_id_num %in% kwic_whipped_ids & !doc_id_num %in% exclude_whipped_ids ~ "beating_injury",
+      TRUE ~ categories  # preserve existing category assignments
+    )
+  )
+
+# Quick check
+afro_sun |> count(categories)
+
+beating <- afro_sun %>% 
+  filter(categories == "beating_injury")
+#This adds 10 more articles to the beating_injury database
+#Now says that 71 articles have beating injury
+#
+```
+## Updated Afro and BaltSun breakdown
+
+```{r}
+afro_sun %>% 
+  filter(categories == "beating_injury") %>% 
+  count(pubtitle)
+#Afro - 46/319= 14.4%
+#Sun - 25/711= 3.5% 
+#Afro still has 4 times the amount of coverage but it's just slightly different percentages
+```
 
 ### Examine a single article
 
 ```{r}
-beating$clean_text[42] |>
+afro_sun$clean_text[1007] |>
   strwrap(width = 60) |>
   writeLines("temp_text.txt")
 
 file.edit("temp_text.txt")
 ```
-
 
 ## Escape Search
 
@@ -256,19 +321,13 @@ kwic_escape_recapture <- kwic(my_tokens,
 #26(Saying boys aren't escaping),41,47(saying the boy escaped from homes and sent to Cheltenham),69(boy stole father's money and escaped from home),72(says the broom factory doesn't allow for escape),
 ```
 
+
 ```{r}
 afro_sun$clean_text[615] |>
   strwrap(width = 60) |>
   writeLines("temp_text.txt")
 
 file.edit("temp_text.txt")
-```
-
-## Aubrey Brunson Search
-
-```{r}
-afro_sun[grepl("Aubrey Brunson", afro_sun$clean_text, ignore.case = TRUE), c("title", "pubtitle")]
-#three articles popped up, all from afro_sun
 ```
 
 [Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
