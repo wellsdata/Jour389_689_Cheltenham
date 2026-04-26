@@ -268,6 +268,7 @@ beating <- afro_sun %>%
 #Now says that 71 articles have beating injury
 #
 ```
+
 ## Updated Afro and BaltSun breakdown
 
 ```{r}
@@ -320,7 +321,6 @@ kwic_escape_recapture <- kwic(my_tokens,
   )
 #26(Saying boys aren't escaping),41,47(saying the boy escaped from homes and sent to Cheltenham),69(boy stole father's money and escaped from home),72(says the broom factory doesn't allow for escape),
 ```
-
 
 ```{r}
 afro_sun$clean_text[615] |>
@@ -441,6 +441,17 @@ timeline_joined <- timeline |>
 # write_csv(timeline_joined, "./output/timeline_joined_april9.csv")
 
 
+```
+
+```{r}
+#data for Ela to create a graphic in flourish
+# Create the summary data
+year_pub_summary <- afro_sun |> 
+  group_by(pubtitle, year) |> 
+  summarise(total = n(), .groups = "drop")
+
+# Export to CSV for Flourish
+write.csv(year_pub_summary, "cheltenham_coverage_by_year.csv", row.names = FALSE)
 ```
 
 ### Count document types by publication
