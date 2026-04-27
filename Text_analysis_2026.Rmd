@@ -369,20 +369,20 @@ afro_sun |>
 # One-time cleaning
 
 ```{r message=FALSE, warning=FALSE}
-# 
-# afro_sun <- afro_sun |>
-#   mutate(yearmo = as.yearmon(date_clean))
-# 
-# #Got rid of afro_sun_articles. Changed from document_clean to document_type
-# afro_sun <- afro_sun %>%
-#   mutate(document_type = case_when(
-#     document_type == "ar ticle"  ~ "article",
-#     document_type == "arti cle"  ~ "article",
-#     document_type == "artic le"  ~ "article",
-#     document_type == "articl e"  ~ "article",
-#     document_type == "Article"  ~ "article",
-#     TRUE ~ document_type  # Fallback to the original value if no match
-#   )) |> 
+ 
+ afro_sun <- afro_sun |>
+   mutate(yearmo = as.yearmon(date_clean))
+ 
+ #Got rid of afro_sun_articles. Changed from document_clean to document_type
+ afro_sun <- afro_sun %>%
+   mutate(document_type = case_when(
+     document_type == "ar ticle"  ~ "article",
+     document_type == "arti cle"  ~ "article",
+     document_type == "artic le"  ~ "article",
+     document_type == "articl e"  ~ "article",
+     document_type == "Article"  ~ "article",
+     TRUE ~ document_type  # Fallback to the original value if no match
+   )) 
 #   mutate(pubtitle = case_when(
 #     pubtitle=="Afro-American (1893-)" ~ "Afro_American",
 #     pubtitle=="The Sun (1837-)" ~ "The_Sun",
@@ -509,7 +509,7 @@ bigrams <- afro_sun |>
   separate(bigram, c("word1", "word2"), sep = " ") |> 
   filter(!word1 %in% stop_words$word) |>
   filter(!word2 %in% stop_words$word) |> 
-  count(word1, word2, sort = TRUE) |> 
+  count(word1, word2,pubtitle, sort = TRUE) |> 
   filter(!is.na(word1))
 
 bigrams
@@ -525,6 +525,40 @@ top_20_bigrams <- bigrams |>
   select(bigram, n)
 
 top_20_bigrams
+```
+```{r}
+bigrams_both <- bigrams |> 
+  group_by(word1, word2) |> 
+  filter(n_distinct(pubtitle) == 2) |> 
+  ungroup() |> 
+  group_by(word1, word2) |> 
+  mutate(total_n = sum(n)) |> 
+  ungroup() |> 
+  arrange(desc(total_n))
+  
+```
+```{r}
+bigrams_both_wide <- bigrams |>
+  group_by(word1, word2) |>
+  filter(n_distinct(pubtitle) == 2) |>
+  ungroup() |>
+  pivot_wider(
+    names_from  = pubtitle,
+    values_from = n,
+    values_fill = 0
+  ) |>
+  unite(bigram, word1, word2, sep = " ") |>    # combine into one column
+  mutate(total_n = rowSums(across(where(is.numeric)))) |>
+  arrange(desc(total_n))
+```
+```{r}
+bigrams_20_bw <- bigrams_both_wide |>
+    top_n(20) |> 
+  select(bigram, total_n, The_Sun, Afro_American)
+  
+  write.csv(bigrams_20_bw, "bigrams_both_wide_20.csv")
+  
+  bigrams_20_bw
 ```
 
 [Create a chart]{style="font-size: 18px; font-weight: bold;"}
@@ -679,6 +713,89 @@ negative_bigrams <- afro_sun |>
 
 negative_bigrams |> head(20)
 ```
+#Sentencing data - An analysis of how the two news outlets report on the Black boys being sentenced to the House of Reformation. 
+```{r}
+# Get articles mentioning "House of Reformation" - using grepl instead of kwic
+house_docs <- afro_sun |>
+  filter(grepl("reformation|cheltenham|reform school", clean_text, ignore.case = TRUE)) |>
+  select(doc_id, pubtitle, clean_text) |>
+  rename(docname = doc_id)
+
+# Get articles mentioning sentencing terms
+sentencing_docs <- kwic(my_tokens, 
+                        pattern = c("sentenced", "sent to", "prison sentence", "years in prison", "committed"),
+                        valuetype = "fixed") |> 
+  as.data.frame() |> 
+  distinct(docname, keyword, .keep_all = TRUE)
+
+# Keep only articles appearing in BOTH
+kwic_both <- sentencing_docs |> 
+  filter(docname %in% house_docs$docname) |> 
+   left_join(afro_sun |> select(doc_id, pubtitle), by = c("docname" = "doc_id"))
+
+sentencing_docs <- sentencing_docs |> 
+  left_join(afro_sun |> select(doc_id, pubtitle), by = c("docname" = "doc_id"))
+```
+
+
+```{r}
+sentencing_docs |> 
+  count(pubtitle)
+```
+
+```{r}
+kwic_both <- kwic_both |>
+  filter(!docname %in% c("article_74",
+                         "article_130",
+                         "article_139",
+                         "article_175",
+                         "article_53",
+                         "article_57",
+                         "article_72",
+                         "article_91",
+                         "article_115",
+                         "article_118",
+                         "article_141",
+                         "article_189",
+                         "article_198",
+                         "article_258",
+                         "article_319",
+                         "article_344",
+                         "article_353",
+                         "article_374",
+                         "article_387",
+                         "article_413",
+                         "article_153",
+                         "article_425",
+                         "article_459",
+                         "article_480",
+                         "article_498",
+                         "article_19",
+                         "article_526",
+                         "article_577",
+                         "article_582",
+                         "article_599",
+                         "article_616",
+                         "article_668",
+                         "article_692",
+                         "article_703",
+                         "article_768",
+                         "article_773",
+                         "article_818",
+                         "article_880",
+                         "article_901",
+                         "article_931",
+                         "article_966",
+                         "article_1010",
+                         "article_1017"))
+  
+```
+
+```{r}
+kwic_both <- kwic_both |>
+  mutate(category = "sentencing")
+```
+
 
 ::: {style="text-align: center; color: #1FB0C4; font-weight: bold;"}
 # Speech Parsing
