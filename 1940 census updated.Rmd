@@ -1,0 +1,98 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(tidyverse)
+library(stringr)
+library(readr)
+library(purrr)
+library(googlesheets4)
+library(janitor)
+library(dbplyr)
+```
+
+```{r}
+census1940_1 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRvq4U_xHbqJcb2HYwubnP7UpE6Sb-ygYYJLq-fmS1YNW2K_ZK9sFRzsnX5dxsOLp5MDk9X84ysLC3R/pub?gid=950350791&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_2 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRlcqfPtBYkyIKpICYhn8SnoUzGiUhWxbFFzXMfopIL50B0Sk6v0FNfAmPJhvKPti0ppFZD_tjilyct/pub?gid=1187880030&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_3 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vT3IpsVdALYs1dqhnKyg-kWaLaYj5R19pgTBbvSG8CYgist8qPESAouVtSk-JbUAor6OK6N35b0qTqi/pub?gid=1761222856&single=true&output=csv") %>% 
+ mutate(across(everything(), as.character))
+census1940_4 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSAKwLORBH5nTMy8yhcC_hFxNDZwUWvGKDO6n1hlHf6QD-B5qW-oPKfUsFLBN-EKafCFhuMgQmoXSfA/pub?gid=175638055&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_5 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRkU7eIxudOq6igxknxxwqLfKjST2dd6ociCI0A_A31eihKktfzE0nDiK3bDTHY70PsIimDLMCByr-t/pub?gid=174653265&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_6 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vR9z2K6ZmUr_dIOGbPUmp3jAoWyy3rBnNX5q3oIsa7RML1iNZGCUK7hzcd8Hj4NWK61wkhB4CTcpU1H/pub?gid=1744003631&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_7 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSSHm8iAqHhnF9-GnIavUp10hgh5NUxhnojJ1yUKgoFd5WUwal4GjKVpVgwokuQCSBvYsHldCGjKN9w/pub?gid=131469947&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_8 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTT8mWBN8FW3chRGH1Kjkr7gkHwtC3h90tV3v9gTFrE7WI16pfPZVCJN0XwxBRqpJdOEJPFb58z0Aiy/pub?gid=587967722&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_9 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vR66FHc-DZg3wdAjDz5Mc3On9oHUEy54NxF-t20Km5OShFO8RpJQKtk3ed_j_lRbkO95lFEHWknIRI5/pub?gid=639124342&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_10 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTms9lcVctHRTOSJUCa7X26YmCsi644dUEF_cP1oBV6hjKMWxxbHM3ybR0f7J5VbdUfSWuZmveS29LT/pub?gid=1714881504&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_11 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vThXLr8K6jylRjnFRFQSTkVF0qSfCiq82fJvP5tLi6PGy0JVzXwRKfUpSknz_8PshEtus8RZSgK24Ua/pub?gid=2062610180&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_12 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRLgZtPGIn2O7uuiIymn3ABOs8O3ATdO94Fq7toyOb4sMoHkQAkFthQHDRz-gdsYaBZ3BVw33_4gGZa/pub?gid=1044958831&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_13 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRTrDs7-Gh_VypxbIf7PIW_u2bZ6cgeAbCa1QaDNU-T3dsigS-FL--l26i1RUTTTpBTCxLQjTTV4onD/pub?gid=1320645811&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_14 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRWMdeleLkey0dpl37FoQJbj8i6xnx2gI2H85vDGMACNSKeOfi9KOr6aUE87jZFbt0XXWQ2DZRktvy8/pub?gid=1008924299&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_15 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTHeDRehTpOUpSqYwHIOibFTA1bOUOvOxTUFyN8i95IrjX-fuQTytnjmGLzz5dRJ-js7EglQTE-iHVv/pub?gid=139293958&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_16 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTdVstBAsZobjPXSEr9MV_ApljaV06jp_ymhgOhi3y8bJwjl1XE8h5CEOu95RXt8-rq4oGRiLDIPL9T/pub?gid=2015550917&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_17 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTEMjRw_3DZRyZ7Pe7A3Pz5fe55lRCQVBYLAW0cLoSsNtnbCfJeirbD9fuqwDvaOM10bnPddEgxNweD/pub?gid=585887516&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_18 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSK4pOjSjLtj18Ry10IOyOZQ7HU8WjtumfapY40CrdKFxRW-X5rxPvlnc-W9oqHxYS2ErFLGidjmAlK/pub?gid=1016156284&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_19 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vRKq0i5TuYTN9ziZPYJ_gaJ47fAWD3C4QWrftOdZTMJWLvGiEPp_w5PDOcmFIUmmci1WafJmYMPMuvO/pub?gid=2055824996&single=true&output=csv") %>% 
+  mutate(across(everything(), as.character))
+census1940_20 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQS6w10Zp5Bwm4j4ZeXXnskB7U780ubw4zGyizlbD9K-jLf064KkTZwZyLwcLTsE4OXApZh5ff1MKGA/pub?gid=924585920&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_21 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTdwggDeqIHz_svkBeRxc8_8WZEG0o9xT3neFjGFpNiL-OJQYCNg7wrKdolYAYyOY1Ism7KXVvVDrCc/pub?gid=639764421&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_22 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTv927vVnTabvtHSciwXlmQtiZ0tL8cfVbuE6TOcHSYC8qV8YalAp7qWXtKbPkL7Yo1VeErbHdY9PLS/pub?gid=255908456&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_23 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vSi-l43ACNkYeuHtmXsDz4Vs8tl-DxuJn3ObNx4XSuWQZ-aNKmSIBey0Hlmp0_ZYyOVEwXLp2P7wEc8/pub?gid=1845264676&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_24 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vQ_BvUPRBiJTBCr46XHO0-V95rBWNhPQaXOyHu8-thnBIvuHrUCxGZ4rTxWKUpjChajU4hbDBwYlzHd/pub?gid=1360034309&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+census1940_25 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vTVBH9BAt692ZDKsgteuYebOrvMwtW-lm1pk6qMULUfq7X0886WNVClZCyKb3zNXO86TvUaGpCqSsQx/pub?gid=525359109&single=true&output=csv") %>%
+  mutate(across(everything(), as.character))
+```
+
+```{r}
+
+census_1940 <- bind_rows(
+  census1940_1, census1940_2, census1940_3, census1940_4, census1940_5,
+  census1940_6, census1940_7, census1940_8, census1940_9, census1940_10,
+  census1940_12, census1940_13, census1940_14, census1940_15, census1940_16,
+  census1940_17, census1940_18, census1940_19, census1940_20, census1940_21, census1940_22, census1940_23, census1940_24, census1940_25
+) |> 
+  clean_names() |> 
+  mutate(decade = 1940)
+
+```
+
+```{r}
+census_1940_filter <- census_1940 |>
+  filter(relationship_to_head %in% c("Inmate", "Officer", "Servant"))
+  
+  
+```
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
