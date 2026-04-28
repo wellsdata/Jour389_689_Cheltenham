@@ -100,7 +100,7 @@ kwic_broom <- kwic(my_tokens, pattern = "broom", valuetype = "regex",window = 20
 ### Examine a single article
 
 ```{r}
-afro_sun$clean_text[482] |>
+afro_sun$clean_text[660] |>
   strwrap(width = 60) |>
   writeLines("temp_text.txt")
 
