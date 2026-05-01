@@ -9,19 +9,19 @@ editor_options:
 [Baltimore Sun v. Afro American news coverage]{style="font-size: 40pt;"}
 :::
 
-April 15, 2026 <br>
+May 1, 2026 <br>
 
 > This code compares news coverage of Cheltenham in the Baltimore Sun vs the Afro-American We will use R and the Tidytext package to explore common words, analyze sentiment, and then the Quanteda package to examine keywords in the story context.
 
 <br>
 
 ::: {style="text-align: center;"}
-**Rob Wells, Ph.D.**\
+**Rob Wells, Ph.D.,** **Ela Jalil,** **Akira Kyles**\
 Philip Merrill College of Journalism, University of Maryland.\
 [robwells\@umd.edu](mailto:robwells@umd.edu){.email} \| <a href="https://www.linkedin.com/in/rob-wells-7929329/">LinkedIn</a>.\
 :::
 
-**Ela Jalil** **Akria Kyles**
+
 
 ## Load software
 
@@ -330,7 +330,7 @@ afro_sun$clean_text[615] |>
 file.edit("temp_text.txt")
 ```
 
-[Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
+#cut from here to end of sequence at line 359 [Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
 
 ```{r}
 media_narratives <- kwic(my_tokens, 
@@ -355,7 +355,7 @@ media_narratives_table <- media_narratives |>
 datatable(media_narratives_table,
           caption = "Journalism Terms in Context",
           options = list(pageLength = 20))
-
+#END CUT
 ```
 
 ### Count the titles
@@ -451,7 +451,7 @@ year_pub_summary <- afro_sun |>
   summarise(total = n(), .groups = "drop")
 
 # Export to CSV for Flourish
-write.csv(year_pub_summary, "cheltenham_coverage_by_year.csv", row.names = FALSE)
+#write.csv(year_pub_summary, "cheltenham_coverage_by_year.csv", row.names = FALSE)
 ```
 
 ### Count document types by publication
@@ -501,7 +501,7 @@ file.edit("temp_text.txt")
 ```{r}
 #changed to afro_sun - maybe shouldn't be changing it to Bal_Sun, but there is also no data set called for Bal_Sun
 bigrams <- afro_sun |> 
-  select(clean_text) |> 
+  select(clean_text, pubtitle) |> 
   mutate(text = str_squish(clean_text)) |> 
   mutate(text = tolower(clean_text)) |>  
   mutate(text = str_replace_all(text, "- ", "")) |> 
@@ -509,7 +509,7 @@ bigrams <- afro_sun |>
   separate(bigram, c("word1", "word2"), sep = " ") |> 
   filter(!word1 %in% stop_words$word) |>
   filter(!word2 %in% stop_words$word) |> 
-  count(word1, word2,pubtitle, sort = TRUE) |> 
+  count(word1, word2, pubtitle, sort = TRUE) |> 
   filter(!is.na(word1))
 
 bigrams
@@ -556,7 +556,7 @@ bigrams_20_bw <- bigrams_both_wide |>
     top_n(20) |> 
   select(bigram, total_n, The_Sun, Afro_American)
   
-  write.csv(bigrams_20_bw, "bigrams_both_wide_20.csv")
+ # write.csv(bigrams_20_bw, "bigrams_both_wide_20.csv")
   
   bigrams_20_bw
 ```
@@ -797,262 +797,3 @@ kwic_both <- kwic_both |>
 ```
 
 
-::: {style="text-align: center; color: #1FB0C4; font-weight: bold;"}
-# Speech Parsing
-:::
-
-It uses the [udpipe](https://cran.r-project.org/web/packages/udpipe/index.html) package in R
-
-Tokenization, Parts of Speech Tagging, Lemmatization and Dependency Parsing with the 'UDPipe' 'NLP' Toolkit.
-This natural language processing toolkit provides language-agnostic 'tokenization', 'parts of speech tagging', 'lemmatization' and 'dependency parsing' of raw text.
-
-This code loads an English language model to permit tagging of parts of speech.
-<br> This version only deals with adjectives.
-<br>\
-It then counts all adjectives across all articles and then counts adjectives by article.
-<br> Credit to Claude.ai for providing the basis of this code.
-<br>
-
-[Load English language model]{style="font-size: 18px; font-weight: bold;"}
-
-```{r include=FALSE}
-udmodel <- udpipe_download_model(language = "english")
-udmodel <- udpipe_load_model(udmodel$file_model)
-```
-
-[Annotate parts of speech on articles]{style="font-size: 18px; font-weight: bold;"}
-
-```{r}
-# Then run your annotation
-annotated_text <- udpipe_annotate(udmodel, 
-                                 x = bal_sun$text, 
-                                 doc_id = bal_sun$index,
-                                   parser = "default",
-                                   tagger = "default")
-annotated_df <- as.data.frame(annotated_text)
-```
-
-The annotated_df columns follow a "CoNLL-U" format for annotated linguistic data in Universal Dependencies.
-It permits analysis of grammatical and syntactic structure of text.
-
-Breaking down the details in an annotated dataframe from UDPipe:
-
--   doc_id: Identifier for the document - this matches harris_articles_df\$filename.
-
--   paragraph_id: Identifier for paragraphs within each document.
-
--   sentence_id: Identifier for sentences within each document.
-
--   sentence: The full text of the sentence.
-
--   token_id: Identifier for each token (word, punctuation) within a sentence.
-
--   token: The actual word or punctuation mark.
-
--   lemma: The base or dictionary form of the token (e.g., "running" → "run").\
-    upos: Universal Part of Speech tag - a standardized grammatical category (e.g., NOUN, VERB, ADJ).
-
--   xpos: Language-specific part of speech tag - more detailed than upos, varies by language.
-    feats: Morphological features - additional grammatical information like Number=Sing, Tense=Past.
-
--   head_token_id: The ID of the token that the current token depends on in the dependency parse.
-
--   dep_rel: Dependency relation - describes the syntactic relationship between a token and its head (e.g., "nsubj" for nominal subject).
-
--   deps: Enhanced dependency graph in the format of head-relation pairs.
-
--   misc: Miscellaneous information that doesn't fit elsewhere, often contains spans of tokens or other metadata.
-
-Learn more about [Universal Dependencies format](https://universaldependencies.org/format.html)
-
-A nerdy paper about this process [Tokenizing, POS Tagging, Lemmatizing and Parsing UD 2.0 with UDPipe](https://ufal.mff.cuni.cz/~straka/papers/2017-conll_udpipe.pdf)
-
-[Count adjectives]{style="font-size: 18px; font-weight: bold;"}
-
-```{r}
-# Filter for adjectives (upos = "ADJ") and count frequencies
-adjective_counts <- annotated_df |>
-  filter(upos == "ADJ") |>
-  group_by(token) |>
-  summarise(
-    frequency = n(),
-    articles = n_distinct(doc_id)
-  ) |>
-  arrange(desc(frequency))
-
-datatable(adjective_counts,
-          caption = "Top adjectives in bal_sun crime coverage",
-          options = list(pageLength = 10)) 
-
-```
-
-[Interesting results:]{style="font-size: 18px; font-weight: bold;"}
-
--   violent is #3, appears 101 times in 40 articles. Is this racialized?
--   criminal is #4, appears 79 times in 28 articles.
--   illegal is #16, appears 35 times in 16 articles. Is this a focus on "illegal activity" or "illegal behavior"? Or "illegal drugs"?
--   safer is #21, appears 27 times in 15 articles. Is this a focus on "safer communities" or "safer neighborhoods"? Or "safer streets"?
-
-[Extract adjective-noun pairs]{style="font-size: 18px; font-weight: bold;"}
-
-This section extracts adjective-noun pairs where the adjective directly modifies the noun.
-It then tabulates the pairs by frequency and by article.
-
-```{r echo=TRUE, message=FALSE, warning=FALSE}
-adj_noun_pairs <- annotated_df |>
-  inner_join(
-    annotated_df |> select(doc_id, sentence_id, token, token_id, upos),
-    by = c("doc_id", "sentence_id", "head_token_id" = "token_id")
-  ) |>
-  # Filter for adjectives modifying nouns
-  filter(
-    dep_rel == "amod" &    # amod = adjectival modifier
-    upos.x == "ADJ" &      # first token is adjective
-    upos.y == "NOUN"       # head word is noun
-  ) |>
-  # Select and rename relevant columns
-  select(
-    article_id = doc_id,
-    sentence_id,
-    adjective = token.x,
-    noun = token.y
-  )
-
-# Count frequencies of adjective-noun pairs
-adj_noun_counts <- adj_noun_pairs |>
-  group_by(adjective, noun) |>
-  summarise(
-    frequency = n(),
-    articles = n_distinct(article_id)
-  ) |>
-  arrange(desc(frequency))
-```
-
-```{r}
-datatable(adj_noun_counts,
-          caption = "Top adjectives-noun pairs in bal_sun coverage",
-          options = list(pageLength = 10)) 
-
-```
-
-[Interesting results]{style="font-size: 18px; font-weight: bold;"}
-
--   violent crime, #1, 37 times in 22 articles
--   young people, #13, 9 times in 6 articles
--   public safety, #4, 21 times in 12 articles
--   ghost guns, #16, 8 times in 5 articles
-
-::: {style="text-align: center; color: #1FB0C4; font-weight: bold;"}
-# SpaCy parsing
-:::
-
-["Industrial-Strength Natural Language Processing"]{style="font-size: 18px; font-weight: bold;"}
-
-> This is a python package that we will load in R.
-> It's much more sophisticated than udpipe.
-
-```{r}
-
-# Initialize spacy (one-time setup required: spacy_install())
-# Load English model. Other languages available
-spacy_initialize(model = "en_core_web_sm")
-```
-
-```{r}
-text <- data.frame(
-  doc_id = bal_sun$index,
-  text = bal_sun$text,
-  stringsAsFactors = FALSE
-)
-
-# Parse with spacyr
-parsed <- spacy_parse(text, entity = TRUE, 
-                               lemma = TRUE,
-                               pos = TRUE,
-                               tag= TRUE,  
-                              dependency = TRUE  )
-
-
-```
-
-[Spacy Adjective-noun pairs]{style="font-size: 18px; font-weight: bold;"}
-
-```{r}
-
-# Create adjective-noun pairs using spaCy output
-spacy_adj_noun_pairs <- parsed |>
-  inner_join(
-    parsed |> select(doc_id, sentence_id, token, token_id, pos),
-    by = c("doc_id", "sentence_id", "head_token_id" = "token_id"),
-    suffix = c("_adj", "_noun")
-  ) |>
-  # Filter for adjectives modifying nouns
-  filter(
-    dep_rel == "amod" &           # amod = adjectival modifier
-    pos_adj == "ADJ" &            # first token is adjective
-    pos_noun == "NOUN"            # head word is noun
-  ) |>
-  # Select and rename relevant columns
-  select(
-    article_id = doc_id,
-    sentence_id,
-    adjective = token_adj,
-    noun = token_noun
-  )
-
-# Count frequencies of adjective-noun pairs
-spacy_adj_noun_counts <- spacy_adj_noun_pairs |>
-  group_by(adjective, noun) |>
-  summarise(
-    frequency = n(),
-    articles = n_distinct(article_id),
-    .groups = "drop"
-  ) |>
-  arrange(desc(frequency))
-```
-
-[Create Datatable for spaCy output]{style="font-size: 18px; font-weight: bold;"}
-
-```{r}
-
-# Display results
-datatable(spacy_adj_noun_counts,
-          caption = "Spacy Top adjective-noun pairs in bal_sun crime coverage",
-          options = list(pageLength = 10))
-```
-
-::: {style="text-align: center; color: #1FB0C4; font-weight: bold;"}
-# Examine Keywords, Phrases in Context
-:::
-
-# Skip to this part - don't worry about sentiment analysis rn
-
-<br>
-
-[Process Text Corpus Object]{style="font-size: 18px; font-weight: bold;"}
-
-::: {style="text-align: center; color: #1FB0C4; font-weight: bold;"}
-# Starting Your Own Project?
-
-### "How to get a pile of documents processed for machine learning"
-
-### Saturday, Room 205, 10:15 a.m.- 11:15 a.m.
-:::
-
-<br>
-
-::: {style="text-align: center;"}
-**Questions?**\
-**Rob Wells, Ph.D.**\
-Philip Merrill College of Journalism, University of Maryland.\
-[robwells\@umd.edu](mailto:robwells@umd.edu){.email} \| <a href="https://www.linkedin.com/in/rob-wells-7929329/">LinkedIn</a>.\
-:::
-
-::: {style="text-align: center;"}
-**Tiasia Saunders**\
-Fellow, Howard Center for Investigative Journalism.\
-Philip Merrill College of Journalism, University of Maryland.\
-[tiasias3\@umd.edu](mailto:tiasias3@umd.edu){.email} \| <a href="https://www.linkedin.com/in/tiasia-saunders-1494671b5/">LinkedIn</a>.\
-
-[--30--]{style="font-size: 18px; font-weight: bold;"}
-:::

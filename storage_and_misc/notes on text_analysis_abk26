@@ -1,0 +1,29 @@
+3. New "KWIC Beating" Search
+Deviation: A new code block was added to perform a fixed-value "beating" search using kwic(). This block does not exist in the master file.
+
+Location in text_analysis_abk26: Lines 111–113.
+
+4. Expanded Exclusion IDs in beating_injury Category
+Deviation: The list of exclude_ids used to filter the beating_injury category has been expanded to include IDs: 69, 71, 80.
+
+Location in text_analysis_abk26: Line 153.
+
+5. Omission of "Adding to the beating data" Sections
+Deviation: Text_analysis_abk26.Rmd completely omits the sections "Adding to the beating data," "Assigning codes to kwic_whipped," and "Updated Afro and BaltSun breakdown" that are present in the master file.
+
+Context: These sections (found between lines 189–256 in the master) handle more complex regex for terms like "whipped" and "schad."
+
+6. Addition of Journalism and Lynch Search Terms
+Deviation: Two new sections, "[Search Journalism Terms]" and "[Create Datatable]," were added. These include searches for media-related terms and a complex regex search for lynching-related terms (lynch|hung|hang(ed|ing)...).
+
+Location in text_analysis_abk26: Lines 187–208.
+
+7. One-time Cleaning Logic Change
+Deviation: In the "One-time cleaning" block, a comment was added regarding the change from document_clean to document_type, and the cleanup logic for document_type is formatted differently than the master.
+
+Location in text_analysis_abk26: Lines 220–221.
+
+8. Timeline Join Logic
+Deviation: The logic for joining the timeline data uses a right_join on yearly instead of the master's structure, and specifically selects Afro_American and The_Sun columns.
+
+Location in text_analysis_abk26: Lines 270–271.
