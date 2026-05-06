@@ -196,6 +196,7 @@ census_1940_filter <- census_1940 |>
 census_1950 <- read_csv("https://docs.google.com/spreadsheets/d/e/2PACX-1vR7YNas45_726HtNk1Sg4ZDVYmClCldXH9xZKnDyas7-ppm9cn_daFXrcTk-jX_g764oZqPY-Q449DI/pub?gid=1760186365&single=true&output=csv")
 ```
 decade
+#wells note - no inmate designation for 1950 - wont use
 ```{r}
 census_1950 <- read_csv(
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vR7YNas45_726HtNk1Sg4ZDVYmClCldXH9xZKnDyas7-ppm9cn_daFXrcTk-jX_g764oZqPY-Q449DI/pub?gid=1760186365&single=true&output=csv"
@@ -204,11 +205,17 @@ census_1950 <- read_csv(
   clean_names() |>
   mutate(decade = 1950)
 ```
+```{r}
+census_1950 |> 
+  count(relationship_to_head)
+```
+
+
 
 ```{r}
 census_1950_filter <- census_1950 |>
   filter(relationship_to_head %in% c("Inmate", "Officer", "Servant"))
-  
+
   
 ```
 
@@ -217,7 +224,7 @@ census_all <- bind_rows(
   census_1920_filter,
   census_1930_filter,
   census_1940_filter,
-  census_1950_filter
+  # census_1950_filter
 )
 ```
 
@@ -230,6 +237,12 @@ census_dt <- census_all |>
     birth_like_date,
     relationship_to_head
   )
+```
+
+```{r}
+
+
+
 ```
 
 

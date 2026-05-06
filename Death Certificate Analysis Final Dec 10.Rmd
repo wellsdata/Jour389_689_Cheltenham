@@ -185,6 +185,52 @@ summary_long <- dc |>
                values_to = "count")
 ```
 
+```{r}
+  tuber_long <- dc |> 
+    group_by(death_year, facility) |> 
+    summarise(
+      tuberculosis = sum(tuberculosis, na.rm = TRUE),
+      pneumonia = sum(pneumonia, na.rm = TRUE),
+      typhoid = sum(typhoid, na.rm = TRUE),
+      asthma = sum(asthma, na.rm = TRUE),
+      meningitis = sum(meningitis, na.rm = TRUE),
+      peritonitis = sum(peritonitis, na.rm = TRUE),
+      cardiac_issues = sum(cardiac_issues, na.rm = TRUE),
+      exhaustion = sum(exhaustion, na.rm = TRUE),
+      gastric_ulcer = sum(gastric_ulcer, na.rm = TRUE),
+      encephalitis = sum(encephalitis, na.rm = TRUE),
+      malaria = sum(malaria, na.rm = TRUE),
+      asphyxia = sum(asphyxia, na.rm = TRUE),
+      asthenia = sum(asthenia, na.rm = TRUE),
+      lung_disease = sum(lung_disease, na.rm = TRUE),
+      hemorrhage = sum(hemorrhage, na.rm = TRUE),
+      influenza = sum(influenza, na.rm = TRUE),
+      nephritis = sum(nephritis, na.rm = TRUE),
+      septicemia = sum(septicemia, na.rm = TRUE),
+      diptheria = sum(diptheria, na.rm = TRUE),
+      drowning = sum(drowning, na.rm = TRUE),
+      appendicitis = sum(appendicitis, na.rm = TRUE),
+      spine_disease = sum(spine_disease, na.rm = TRUE),
+      blood_condition = sum(blood_condition, na.rm = TRUE),
+      premature_birth = sum(premature_birth, na.rm = TRUE),
+      violent_injury = sum(violent_injury, na.rm = TRUE),
+      no_details = sum(no_details, na.rm = TRUE)
+    ) |> 
+ pivot_longer(
+      cols = -c(death_year, facility), # Tells R: "Pivot everything EXCEPT these two"
+      names_to = "cause", 
+      values_to = "count"
+    ) |> 
+  filter(cause =="tuberculosis") |> 
+  filter(count > 0)
+
+write_csv(tuber_long, "summary_tuberculosis_deaths_dc.csv")
+
+```
+
+
+
+
 # Death Categories summary
 ```{r}
 death_categories_summary <- summary_long |> 
