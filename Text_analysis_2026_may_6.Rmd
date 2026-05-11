@@ -9,9 +9,9 @@ editor_options:
 [Baltimore Sun v. Afro American news coverage]{style="font-size: 40pt;"}
 :::
 
-May 10, 2026 <br>
+April 15, 2026 <br>
 
-> This code compares news coverage of Cheltenham in the Baltimore Sun vs the Afro-American We use the Tidytext package to explore common words, analyze sentiment, and then the Quanteda package to examine keywords in the story context.
+> This code compares news coverage of Cheltenham in the Baltimore Sun vs the Afro-American We will use R and the Tidytext package to explore common words, analyze sentiment, and then the Quanteda package to examine keywords in the story context.
 
 <br>
 
@@ -23,7 +23,7 @@ Philip Merrill College of Journalism, University of Maryland.\
 
 **Ela Jalil** **Akria Kyles**
 
-### Load software
+## Load software
 
 ```{r message=FALSE, warning=FALSE}
 #Install packages if you don't have them already
@@ -59,124 +59,33 @@ library(janitor)
 
 <br>
 
-
+#Import Combined Afro-Sun articles
 
 ```{r}
 
 afro_sun <- read_csv("./input/afro_sun_articles_april_9.csv")
-
-```
-```{r message=FALSE, warning=FALSE}
- 
- afro_sun <- afro_sun |>
-   mutate(yearmo = as.yearmon(date_clean))
- 
- #Got rid of afro_sun_articles. Changed from document_clean to document_type
- afro_sun <- afro_sun %>%
-   mutate(document_type = case_when(
-     document_type == "ar ticle"  ~ "article",
-     document_type == "arti cle"  ~ "article",
-     document_type == "artic le"  ~ "article",
-     document_type == "articl e"  ~ "article",
-     document_type == "Article"  ~ "article",
-     TRUE ~ document_type  # Fallback to the original value if no match
-   )) 
-#   mutate(pubtitle = case_when(
-#     pubtitle=="Afro-American (1893-)" ~ "Afro_American",
-#     pubtitle=="The Sun (1837-)" ~ "The_Sun",
-#       TRUE ~ pubtitle 
-#   ))
-# 
-# 
-#write_csv(afro_sun, ("./input/afro_sun_articles_may_10.csv"))                  
-
 ```
 
-
-### Count the titles
+#KWIC search
 
 ```{r}
-afro_sun |> 
-  count(pubtitle) |> 
-  arrange(desc(n))
-# The_Sun	711			
-# Afro_American	319	
-```
-
-### Graphic by years
-
-```{r}
-afro_sun |> 
-  group_by(pubtitle) |> 
-  count(year, name = "total") |> 
-ggplot(aes(x = factor(year), y = total, fill = pubtitle)) +
- geom_col() +
-  theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust = 1)) +
-  #coord_flip() +  
-  labs(title = "Sun vs Afro, Cheltenham Coverage by Year",
-       caption = "n=1030 articles. Graphic by Rob Wells. May 10, 2026",
-       x = "Total",
-       y = "")
-```
-### Yearly count by publication
-```{r}
-compare <- afro_sun |> 
-  group_by(pubtitle) |> 
-  count(year, name = "total") |> 
-  pivot_wider(
-    names_from = pubtitle,  # This turns publication titles into column headers
-    values_from = total,    # This fills the cells with your counts
-    values_fill = 0         # This replaces any missing years/counts with 0 instead of NA
-  )
-head(compare)
-```
-
-```{r}
-#data for Ela to create a graphic in flourish
-# Create the summary data
-year_pub_summary <- afro_sun |> 
-  group_by(pubtitle, year) |> 
-  summarise(total = n(), .groups = "drop")
-
-# Export to CSV for Flourish
-# write.csv(year_pub_summary, "cheltenham_coverage_by_year.csv", row.names = FALSE)
-```
-
-### Count document types by publication
-
-```{r}
-
-doc <- afro_sun |> 
-  group_by(pubtitle) |> 
-  count(document_type)
-
-```
-
-### Letter to Editor
-```{r}
-#got rid of afro_sun_articles to afro_sun
-letters <- afro_sun |> 
-  filter(document_type =="letter_to_editor")
-
-
-
-```
-
-
-# KWIC search
-
-```{r}
+#change to afro_sun
 # Create a unique document ID for each article
 afro_sun <- afro_sun |>
   mutate(doc_id = paste0("article_", row_number()))
 
+# Create a quanteda corpus using the text column
+library(quanteda)
+#Look into documentation for quanteda to figure out how to add metadata to corpus object for the quick results
+
 my_corpus <- corpus(afro_sun, text_field = "clean_text")
 
-# Add metadata 
+# Add metadata (optional but useful)
 docvars(my_corpus)$yearmo <- afro_sun$yearmo
 ```
 
-### Basic search for terms
+[Search for the term 'media'] {style="font-size: 18px; font-weight: bold;"}
+
 ```{r}
 # Tokenize corpus
 my_tokens <- tokens(my_corpus)
@@ -188,17 +97,16 @@ kwic_broom <- kwic(my_tokens, pattern = "broom", valuetype = "regex",window = 20
   mutate(doc_id = docname)
 ```
 
-### Fact check: Examine a single article
+### Examine a single article
 
 ```{r}
-afro_sun$clean_text[69] |>
+afro_sun$clean_text[660] |>
   strwrap(width = 60) |>
   writeLines("temp_text.txt")
 
 file.edit("temp_text.txt")
 ```
 
-### Search terms for broom factory
 ```{r}
 kwic_broom2 <- kwic(my_tokens, 
                      pattern = c("broom", "factory", "labor"), 
@@ -208,11 +116,9 @@ kwic_broom2 <- kwic(my_tokens,
   mutate(doc_id = docname)
 ```
 
-### Beating, injury in news articles
+## Searches by Ela, Akira, Nina
 
 ```{r}
-#Searches by Ela, Akira, Nina
-#This search extracts articles that mention abuse of the boys, including beating, hitting, striking, injury, bludgeoning, shooting. This broad search returned 630 entries which were narrowed to 60 after individual review of these search terms in context. 
 # Option 1: Just the regex version (more comprehensive)
 kwic_beating_injury <- kwic(
   my_tokens,
@@ -229,29 +135,14 @@ kwic_beating_injury <- kwic(
 ) |>
   as.data.frame() |>
   mutate(doc_id = docname) |>
-  #filtering out random terms from the search
   filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
 
-```
+#Maybe try to add which paper is reporting - see if there is a way to add back meta data fields
 
+#Wells notes: This search extracts articles that mention abuse of the boys, including beating, hitting, striking, injury, bludgeoning, shooting. This broad search returned 630 entries which were narrowed to 60 after individual review of these search terms in context. 
 
-
-```{r}
-### Fact check: Examine a single article
-
-afro_sun$clean_text[118] |>
-  strwrap(width = 60) |>
-  writeLines("temp_text.txt")
-
-file.edit("temp_text.txt")
-
-```
-
-
-```{r}
-
-#In this section, we reviewed each of the 630 entries in kwic_beating_injury and we noted incorrect or irrelevant passages that don't meet the criteria for news stories about beating, injuries of Cheltenham boys.
-
+#Wells comments:
+#You might want to keep the following:
 #69, 71 marks abuse but not beating
 #80 mentions beating but would be better under slavery mention,
 #855 (mentions cruelty at Cheltenham)
@@ -270,10 +161,10 @@ file.edit("temp_text.txt")
 #482 - a boy murders one of his employers because he doesn't get treated properly 
 #figure out ways to tighten up the search. 483 (says that they made him do intense farm work and didn't pay him, and talks about how bad Cheltenham was and that the bigger boys made the little boys do whatever they wanted, were going to lynch him), 484,  
 #Maybe it would be interesting to explore WHY a boy got sent to Cheltenham, I've seen passing a bad dollar, vagrancy etc. Also different way they describe the boys. 
+
 ```
 
-### Creating case_when function to add codes
-Here we compile the entries that should be excluded for the final analysis
+Creating case_when function to add codes
 
 ```{r}
 kwic_ids <- kwic_beating_injury |>
@@ -322,15 +213,12 @@ Checking how many articles are in the beating_injury code
 afro_sun %>% 
   filter(categories == "beating_injury") %>% 
   count(pubtitle)
-#The Afro 42/319 = 13.2% of articles, TBS: 19/711 = 2.7% of articles.
+#The Afro 39/319 = 12.2% of articles, TBS: 21/711 = 2.9% of articles.
 
 #Wells notes: This search extracts articles that mention abuse of the boys, including beating, hitting, striking, injury, bludgeoning, shooting. This broad search returned 630 entries which were narrowed to 60 after individual review of these search terms in context. Overall, the Afro had 39 articles related to abuse of the boys, or 12.2% of the paper's total coverage, and The Sun had 21 abuse articles, or 2.9% of its total coverage.
-#As a result, stories about abuse of the boys appeared in the Afro at nearly five times (4.89) the rate of the Sun
+#As a result, stories about abuse of the boys appeared in the Afro at four times the rate of the Sun
 
 ```
-
-
-
 
 ## Adding to the beating data
 
@@ -377,12 +265,11 @@ afro_sun |> count(categories)
 beating <- afro_sun %>% 
   filter(categories == "beating_injury")
 #This adds 10 more articles to the beating_injury database
-#Now says that 70 articles have beating injury
+#Now says that 71 articles have beating injury
 #
 ```
 
-
-## Afro and BaltSun beating /whipped articles 
+## Updated Afro and BaltSun breakdown
 
 ```{r}
 afro_sun %>% 
@@ -390,439 +277,18 @@ afro_sun %>%
   count(pubtitle)
 #Afro - 46/319= 14.4%
 #Sun - 25/711= 3.5% 
-#Afro has roughly 4 times (4.1) the rate of abuse coverage as the Sun
+#Afro still has 4 times the amount of coverage but it's just slightly different percentages
 ```
 
-# Sentencing data 
-
-### An analysis of how the two news outlets report on the Black boys being sentenced to the House of Reformation. 
-```{r}
-# Get articles mentioning "House of Reformation" - using grepl instead of kwic
-house_docs <- afro_sun |>
-  filter(grepl("reformation|cheltenham|reform school", clean_text, ignore.case = TRUE)) |>
-  select(doc_id, pubtitle, clean_text) |>
-  rename(docname = doc_id)
-
-# Get articles mentioning sentencing terms
-sentencing_docs <- kwic(my_tokens, 
-                        pattern = c("sentenced", "sent to", "prison sentence", "years in prison", "committed"),
-                        valuetype = "fixed") |> 
-  as.data.frame() |> 
-  distinct(docname, keyword, .keep_all = TRUE)
-
-# Keep only articles appearing in BOTH
-kwic_both <- sentencing_docs |> 
-  filter(docname %in% house_docs$docname) |> 
-   left_join(afro_sun |> select(doc_id, pubtitle), by = c("docname" = "doc_id"))
-#QUESTION REMAINS ABOUT KWIC_BOTH AND WHETHER IT WAS FILTERED BEFORE THE CALCULATION. I THINK THE FILTER SEQUENCE AT LINE 433 NEEDS TO BE PART OF THE CODE AT LINE 416
-sentencing_docs <- sentencing_docs |> 
-  left_join(afro_sun |> select(doc_id, pubtitle), by = c("docname" = "doc_id"))
-```
-
+### Examine a single article
 
 ```{r}
-sentencing_docs |> 
-  count(pubtitle)
+afro_sun$clean_text[1007] |>
+  strwrap(width = 60) |>
+  writeLines("temp_text.txt")
 
-# Sentencing articles
-# Afro_American	71			
-# The_Sun	145	
-```
-
-
-## WELLS QUESTION - SHOULDN'T THIS PRECEDE LINE 355?
-```{r}
-# QUESTION REMAINS ABOUT KWIC_BOTH AND WHETHER IT WAS FILTERED BEFORE THE CALCULATION. I THINK THE FILTER SEQUENCE AT LINE 433 NEEDS TO BE PART OF THE CODE AT LINE 416
-kwic_both <- kwic_both |>
-  filter(!docname %in% c("article_74",
-                         "article_130",
-                         "article_139",
-                         "article_175",
-                         "article_53",
-                         "article_57",
-                         "article_72",
-                         "article_91",
-                         "article_115",
-                         "article_118",
-                         "article_141",
-                         "article_189",
-                         "article_198",
-                         "article_258",
-                         "article_319",
-                         "article_344",
-                         "article_353",
-                         "article_374",
-                         "article_387",
-                         "article_413",
-                         "article_153",
-                         "article_425",
-                         "article_459",
-                         "article_480",
-                         "article_498",
-                         "article_19",
-                         "article_526",
-                         "article_577",
-                         "article_582",
-                         "article_599",
-                         "article_616",
-                         "article_668",
-                         "article_692",
-                         "article_703",
-                         "article_768",
-                         "article_773",
-                         "article_818",
-                         "article_880",
-                         "article_901",
-                         "article_931",
-                         "article_966",
-                         "article_1010",
-                         "article_1017"))
-  
-```
-
-# ----Fact Check ---------
-### Basic search for terms
-```{r}
-# Tokenize corpus
-my_tokens <- tokens(my_corpus)
-
-#Adjust the window = 20 to get more text on either side
-# KWIC search
-kwic_clean <- kwic(my_tokens, pattern = "lady", valuetype = "regex",window = 20) |> 
-  as.data.frame() |>
-  mutate(doc_id = docname)
-```
-
-
-### Quick view of any entry by row
-
-```{r}
-wrapped_text <- strwrap(as.character(afro_sun$clean_text[436]), width = 60)
-writeLines(wrapped_text, "temp_text.txt")
 file.edit("temp_text.txt")
-
-#Can put whatever row you want to read in []
-#Talk about how we want to categorize these letters
-#Add another column in categorization - start working on key words for the codes
 ```
-
-### the doc_id and doc_id_num columns match
-```{r}
-afro_sun |>
-  mutate(doc_id_extracted = as.numeric(str_extract(doc_id, "\\d+"))) |>
-  filter(doc_id_extracted != doc_id_num)
-
-
-```
-
-### Fact check 60 results
-```{r}
-fc_beating <- afro_sun |>
-  filter(categories == "beating_injury") |>
-  select(date_clean, doc_id, title, clean_text)
-
-lines <- fc_beating |>
-  pmap(function(date_clean, doc_id, title, clean_text) {
-    c(
-      strrep("=", 80),
-      paste("DOC_ID:", doc_id),
-      paste("DATE:  ", date_clean),
-      paste("TITLE: ", title),
-      strrep("-", 80),
-      strwrap(clean_text, width = 80),
-      ""   # blank line after each article
-    )
-  }) |>
-  unlist()
-
-#writeLines(lines, "cheltenham_beating_61_results_may10.txt")
-
-
-```
-
-### Notes from fact check beating: delete 14
-```{r}
-
-delete article_38. repeats article_35
-delete article_56. repeats article_50
-delete article_69. doesnt describe a cheltenham beating
-delete article_71. doesnt describe a cheltenham beating
-delete article_74. doesnt describe a cheltenham beating
-delete article_114. doesnt describe a cheltenham beating
-delete article_313.doesnt describe a cheltenham beating
-delete article_386. doesnt describe a cheltenham beating
-delete article_456. doesnt describe a cheltenham beating
-delete article_662. doesnt describe a cheltenham beating
-delete article_861. doesnt describe a cheltenham beating
-delete article_996. doesnt describe a cheltenham beating
-delete article_1062. doesnt describe a cheltenham beating
-delete article_1030. doesnt describe a cheltenham beating
-```
-
-
-### Fact Check whipped - 23 results 
-```{r}
-# Get the doc_id_nums from the kwic search
-kwic_whipped_ids <- kwic_whipped |>
-  mutate(doc_id_num = as.integer(str_extract(doc_id, "\\d+"))) |>
-  dplyr::pull(doc_id_num) |>
-  unique()
-
-# Doc IDs to exclude
-exclude_whipped_ids <- c(
-  3, 168, 210, 362, 449, 482, 484, 491, 495, 516, 531, 569, 617, 661, 886
-)
-
-whipped_afro_sun <- afro_sun |>
-  mutate(
-    doc_id_num = as.integer(str_extract(doc_id, "\\d+")),
-    categories = case_when(
-      doc_id_num %in% kwic_whipped_ids & !doc_id_num %in% exclude_whipped_ids ~ "whipped",
-      TRUE ~ categories  # preserve existing category assignments
-    )
-  )
-
-#print out results
-fc_whipped <- whipped_afro_sun |>
-  filter(categories == "whipped") |>
-  select(date_clean, doc_id, title, clean_text)
-
-lines <- fc_whipped |>
-  pmap(function(date_clean, doc_id, title, clean_text) {
-    c(
-      strrep("=", 80),
-      paste("DOC_ID:", doc_id),
-      paste("DATE:  ", date_clean),
-      paste("TITLE: ", title),
-      strrep("-", 80),
-      strwrap(clean_text, width = 80),
-      ""   # blank line after each article
-    )
-  }) |>
-  unlist()
-
-#writeLines(lines, "cheltenham_whipped_23_results_may10.txt")
-
-```
-
-
-### Notes on FC whipped
-```{r}
-# delete article_872. doesnt describe a cheltenham beating
-# delete article_1007. doesnt describe a cheltenham beating
-```
-
-
-
-### Checking bad results in criminal court calendar
-
-```{r}
-#There were seven articles that somehow lack any relevant results to cheltenham. see crime_check_may10.txt - they are repetitive docket items and these things threw off the bigram counts: article_436, article_607, article_646, article_700, article_722, article_732.
-#i am removing these along with article_699 from the import of the afro_sun
-crim <- afro_sun |> 
-  filter(str_detect(clean_text, "Court Calendar"))
-
-lines1 <- crim |>
-  pmap(function(date_clean, doc_id, title, clean_text, ...) {
-    c(
-      strrep("=", 80),
-      paste("DOC_ID:", doc_id),
-      paste("DATE:  ", date_clean),
-      paste("TITLE: ", title),
-      strrep("-", 80),
-      strwrap(clean_text, width = 80),
-      ""   # blank line after each article
-    )
-  }) |>
-  unlist()
-
-# writeLines(lines1, "crime_check_may10.txt")
-
-
-```
-
-
-# --- Revised Calculation with Fact Check Results ----
-## Fact checked Afro and BaltSun breakdown,May 10
-remove the beating_injury category from the following 16 articles
-
-```{r}
-
-# delete article_38. repeats article_35
-# delete article_56. repeats article_50
-# delete article_69. doesnt describe a cheltenham beating
-# delete article_71. doesnt describe a cheltenham beating
-# delete article_74. doesnt describe a cheltenham beating
-# delete article_114. doesnt describe a cheltenham beating
-# delete article_313.doesnt describe a cheltenham beating
-# delete article_386. doesnt describe a cheltenham beating
-# delete article_456. doesnt describe a cheltenham beating
-# delete article_662. doesnt describe a cheltenham beating
-# delete article_861. doesnt describe a cheltenham beating
-# delete article_872. doesnt describe a cheltenham beating
-# delete article_996. doesnt describe a cheltenham beating
-# delete article_1007. doesnt describe a cheltenham beating
-# delete article_1030. doesnt describe a cheltenham beating
-# delete article_1062. doesnt describe a cheltenham beating
-
-# Doc IDs to exclude
-exclude_fc_ids <- c(38, 56, 69, 71, 74, 114, 313, 386, 456, 662, 861, 872, 996, 1007, 1030, 1062
-)
-
-afro_sun <- afro_sun |>
-  mutate(
-    doc_id_num = as.integer(str_extract(doc_id, "\\d+")),
-    categories = case_when(
-      doc_id_num %in% kwic_whipped_ids & !doc_id_num %in% exclude_fc_ids ~ " ",
-      TRUE ~ categories  # preserve existing category assignments
-    )
-  )
-```
-
-
-### One-time cleaning
-```{r}
-
-afro_sun <- afro_sun |> 
-  filter(!doc_id %in% c("article_436", "article_607", "article_646", "article_699", "article_700", "article_722", "article_732"))
-#delete junk article
-
-```
-
-
-# New title count
-
-```{r}
-afro_sun |> 
-  count(pubtitle) |> 
-  arrange(desc(n))
-# The_Sun	704		
-# Afro_American	319	
-```
-
-```{r}
-#data for Ela to create a graphic in flourish
-# Create the summary data
-year_pub_summary <- afro_sun |> 
-  group_by(pubtitle, year) |> 
-  summarise(total = n(), .groups = "drop")
-
-# Export to CSV for Flourish
-# write.csv(year_pub_summary, "cheltenham_coverage_by_year_may_10.csv", row.names = FALSE)
-```
-
-# New abuse articles total 
-```{r}
-afro_sun %>% 
-  filter(categories == "beating_injury") %>% 
-  count(pubtitle)
-
-#Old:
-#Afro - 46/319= 14.4%
-#Sun - 25/711= 3.5% 
-#Afro has 4 times the amount of coverage
-#new:
-#Afro - 31/319= 9.7%
-#Sun - 19/704= 2.7% 
-#stories about abuse of the boys appeared in the Afro at roughly 3.5 times the rate of The Baltimore Sun
-
-```
-
-
-# Sentencing QUESTION
-#QUESTION REMAINS ABOUT KWIC_BOTH AND WHETHER IT WAS FILTERED BEFORE THE CALCULATION
-```{r}
-# Get articles mentioning "House of Reformation" - using grepl instead of kwic
-house_docs <- afro_sun |>
-  filter(grepl("reformation|cheltenham|reform school", clean_text, ignore.case = TRUE)) |>
-  select(doc_id, pubtitle, clean_text) |>
-  rename(docname = doc_id)
-
-# Get articles mentioning sentencing terms
-sentencing_docs <- kwic(my_tokens, 
-                        pattern = c("sentenced", "sent to", "prison sentence", "years in prison", "committed"),
-                        valuetype = "fixed") |> 
-  as.data.frame() |> 
-  distinct(docname, keyword, .keep_all = TRUE)
-
-# Keep only articles appearing in BOTH
-kwic_both <- sentencing_docs |> 
-  filter(docname %in% house_docs$docname) |> 
-   left_join(afro_sun |> select(doc_id, pubtitle), by = c("docname" = "doc_id"))
-
-sentencing_docs <- sentencing_docs |> 
-  left_join(afro_sun |> select(doc_id, pubtitle), by = c("docname" = "doc_id"))
-
-sentencing_docs |> 
-  count(pubtitle)
-
-# Sentencing articles: 216
-# Afro_American	71			
-# The_Sun	145	
-```
-
-### Revised sentencing total?
-```{r}
-kwic_both <- kwic_both |>
-  filter(!docname %in% c("article_74",
-                         "article_130",
-                         "article_139",
-                         "article_175",
-                         "article_53",
-                         "article_57",
-                         "article_72",
-                         "article_91",
-                         "article_115",
-                         "article_118",
-                         "article_141",
-                         "article_189",
-                         "article_198",
-                         "article_258",
-                         "article_319",
-                         "article_344",
-                         "article_353",
-                         "article_374",
-                         "article_387",
-                         "article_413",
-                         "article_153",
-                         "article_425",
-                         "article_459",
-                         "article_480",
-                         "article_498",
-                         "article_19",
-                         "article_526",
-                         "article_577",
-                         "article_582",
-                         "article_599",
-                         "article_616",
-                         "article_668",
-                         "article_692",
-                         "article_703",
-                         "article_768",
-                         "article_773",
-                         "article_818",
-                         "article_880",
-                         "article_901",
-                         "article_931",
-                         "article_966",
-                         "article_1010",
-                         "article_1017"))
-
-kwic_both <- kwic_both |>
-  mutate(category = "sentencing")
-```
-
-```{r}
-kwic_both |> 
-  count(pubtitle)
-
-#Sentencing articles: 165
-# Afro_American	50			
-# The_Sun	115	
-```
-
-
-#----MATERIAL NOT USED IN THE STORY ------
 
 ## Escape Search
 
@@ -856,7 +322,6 @@ kwic_escape_recapture <- kwic(my_tokens,
 #26(Saying boys aren't escaping),41,47(saying the boy escaped from homes and sent to Cheltenham),69(boy stole father's money and escaped from home),72(says the broom factory doesn't allow for escape),
 ```
 
-### Single article examination 
 ```{r}
 afro_sun$clean_text[615] |>
   strwrap(width = 60) |>
@@ -865,6 +330,94 @@ afro_sun$clean_text[615] |>
 file.edit("temp_text.txt")
 ```
 
+[Search Journalism Terms]{style="font-size: 18px; font-weight: bold;"}
+
+```{r}
+media_narratives <- kwic(my_tokens, 
+                         pattern = c("media", "reporter", "newspaper", "journalist"), 
+                         valuetype = "fixed") |> 
+  as.data.frame() |>
+  mutate(doc_id = docname)
+
+quanteda_df_llm <- kwic(my_tokens, phrase(c("lynch|hung|hang(ed|ing)|executed?|execution|mob\\s+law|vigilance\\s+committee")), window = 20, valuetype = "regex") %>% as.data.frame() |> 
+  distinct(docname,  .keep_all = TRUE)
+
+#hanged became changed - get rid of the question mark, can adapt this - use AI, I want a regular expression that doesn't give me change or hungry. Rob used this code for lynching project. Do this sort of examination of the data. Move KWIC into code. 
+```
+
+[Create Datatable]{style="font-size: 18px; font-weight: bold;"}
+
+```{r}
+
+media_narratives_table <- media_narratives |> 
+  select(doc_id, pre, keyword, post)
+
+datatable(media_narratives_table,
+          caption = "Journalism Terms in Context",
+          options = list(pageLength = 20))
+
+```
+
+### Count the titles
+
+```{r}
+afro_sun |> 
+  count(pubtitle) |> 
+  arrange(desc(n))
+```
+
+# One-time cleaning
+
+```{r message=FALSE, warning=FALSE}
+ 
+ afro_sun <- afro_sun |>
+   mutate(yearmo = as.yearmon(date_clean))
+ 
+ #Got rid of afro_sun_articles. Changed from document_clean to document_type
+ afro_sun <- afro_sun %>%
+   mutate(document_type = case_when(
+     document_type == "ar ticle"  ~ "article",
+     document_type == "arti cle"  ~ "article",
+     document_type == "artic le"  ~ "article",
+     document_type == "articl e"  ~ "article",
+     document_type == "Article"  ~ "article",
+     TRUE ~ document_type  # Fallback to the original value if no match
+   )) 
+#   mutate(pubtitle = case_when(
+#     pubtitle=="Afro-American (1893-)" ~ "Afro_American",
+#     pubtitle=="The Sun (1837-)" ~ "The_Sun",
+#       TRUE ~ pubtitle 
+#   ))
+# 
+# 
+# write_csv(afro_sun, ("./input/afro_sun_articles_april_9.csv"))                  
+
+```
+
+```{r}
+afro_sun |> 
+  group_by(pubtitle) |> 
+  count(year, name = "total") |> 
+ggplot(aes(x = factor(year), y = total, fill = pubtitle)) +
+ geom_col() +
+  theme(legend.position = "none", axis.text.x = element_text(angle=90, hjust = 1)) +
+  #coord_flip() +  
+  labs(title = "Sun vs Afro, Cheltenham Coverage by Year",
+       caption = "n=1030 articles. Graphic by Rob Wells. April 9 -2026",
+       x = "Total",
+       y = "")
+```
+
+```{r}
+compare <- afro_sun |> 
+  group_by(pubtitle) |> 
+  count(year, name = "total") |> 
+  pivot_wider(
+    names_from = pubtitle,  # This turns publication titles into column headers
+    values_from = total,    # This fills the cells with your counts
+    values_fill = 0         # This replaces any missing years/counts with 0 instead of NA
+  )
+```
 
 
 
@@ -903,7 +456,48 @@ timeline_joined <- timeline |>
 
 ```
 
-### Single article examination
+```{r}
+#data for Ela to create a graphic in flourish
+# Create the summary data
+year_pub_summary <- afro_sun |> 
+  group_by(pubtitle, year) |> 
+  summarise(total = n(), .groups = "drop")
+
+# Export to CSV for Flourish
+write.csv(year_pub_summary, "cheltenham_coverage_by_year.csv", row.names = FALSE)
+```
+
+### Count document types by publication
+
+```{r}
+
+doc <- afro_sun |> 
+  group_by(pubtitle) |> 
+  count(document_type)
+
+```
+
+Analyze articles Afro-American (1893-) display_ad 4 - what is in these ads?
+
+Editorials --The Afro carried 8 editorials but nothing in the Sun?
+Are we sure of that?
+How can we verify it.
+--Pull up one of the Afro editorials and look at 1-2 months on either side
+
+Obituaries --check Sun, Afro obituaries
+
+# Wells ask - create a new column counting the words of clean_text
+
+```{r}
+#got rid of afro_sun_articles to afro_sun
+letters <- afro_sun |> 
+  filter(document_type =="letter_to_editor")
+
+
+
+```
+
+# Quick view of any entry by row
 
 ```{r}
 wrapped_text <- strwrap(as.character(letters$full_text[35]), width = 60)
@@ -918,8 +512,9 @@ file.edit("temp_text.txt")
 # Bigrams
 
 ```{r}
+#changed to afro_sun - maybe shouldn't be changing it to Bal_Sun, but there is also no data set called for Bal_Sun
 bigrams <- afro_sun |> 
-  select(clean_text, pubtitle) |> 
+  select(clean_text) |> 
   mutate(text = str_squish(clean_text)) |> 
   mutate(text = tolower(clean_text)) |>  
   mutate(text = str_replace_all(text, "- ", "")) |> 
@@ -944,7 +539,6 @@ top_20_bigrams <- bigrams |>
 
 top_20_bigrams
 ```
-
 ```{r}
 bigrams_both <- bigrams |> 
   group_by(word1, word2) |> 
@@ -956,7 +550,6 @@ bigrams_both <- bigrams |>
   arrange(desc(total_n))
   
 ```
-
 ```{r}
 bigrams_both_wide <- bigrams |>
   group_by(word1, word2) |>
@@ -976,7 +569,7 @@ bigrams_20_bw <- bigrams_both_wide |>
     top_n(20) |> 
   select(bigram, total_n, The_Sun, Afro_American)
   
-  #write.csv(bigrams_20_bw, "bigrams_both_wide_20.csv")
+  write.csv(bigrams_20_bw, "bigrams_both_wide_20.csv")
   
   bigrams_20_bw
 ```
@@ -986,15 +579,13 @@ bigrams_20_bw <- bigrams_both_wide |>
 ```{r}
 ggplot(top_20_bigrams, aes(x = reorder(bigram, n), y = n, fill=n)) +
   geom_bar(stat = "identity") +
+  theme(legend.position = "none") +
   coord_flip() +  
-  labs(title = "Top Two-Word phrases in afro and bal_sun coverage",
-       caption = "Graphic by Rob Wells. 5-10-2026",
+  labs(title = "Top Two-Word phrases in bal_sun coverage",
+       caption = "n=81 articles, 2024-2025. Graphic by Rob Wells. 2-22-2026",
        x = "Phrase",
        y = "Count of terms")
 ```
-
-
-
 
 ::: {style="text-align: center; color: #1FB0C4; font-weight: bold;"}
 # Sentiment analysis
@@ -1134,6 +725,88 @@ negative_bigrams <- afro_sun |>
   arrange(total_sentiment)
 
 negative_bigrams |> head(20)
+```
+#Sentencing data - An analysis of how the two news outlets report on the Black boys being sentenced to the House of Reformation. 
+```{r}
+# Get articles mentioning "House of Reformation" - using grepl instead of kwic
+house_docs <- afro_sun |>
+  filter(grepl("reformation|cheltenham|reform school", clean_text, ignore.case = TRUE)) |>
+  select(doc_id, pubtitle, clean_text) |>
+  rename(docname = doc_id)
+
+# Get articles mentioning sentencing terms
+sentencing_docs <- kwic(my_tokens, 
+                        pattern = c("sentenced", "sent to", "prison sentence", "years in prison", "committed"),
+                        valuetype = "fixed") |> 
+  as.data.frame() |> 
+  distinct(docname, keyword, .keep_all = TRUE)
+
+# Keep only articles appearing in BOTH
+kwic_both <- sentencing_docs |> 
+  filter(docname %in% house_docs$docname) |> 
+   left_join(afro_sun |> select(doc_id, pubtitle), by = c("docname" = "doc_id"))
+
+sentencing_docs <- sentencing_docs |> 
+  left_join(afro_sun |> select(doc_id, pubtitle), by = c("docname" = "doc_id"))
+```
+
+
+```{r}
+sentencing_docs |> 
+  count(pubtitle)
+```
+
+```{r}
+kwic_both <- kwic_both |>
+  filter(!docname %in% c("article_74",
+                         "article_130",
+                         "article_139",
+                         "article_175",
+                         "article_53",
+                         "article_57",
+                         "article_72",
+                         "article_91",
+                         "article_115",
+                         "article_118",
+                         "article_141",
+                         "article_189",
+                         "article_198",
+                         "article_258",
+                         "article_319",
+                         "article_344",
+                         "article_353",
+                         "article_374",
+                         "article_387",
+                         "article_413",
+                         "article_153",
+                         "article_425",
+                         "article_459",
+                         "article_480",
+                         "article_498",
+                         "article_19",
+                         "article_526",
+                         "article_577",
+                         "article_582",
+                         "article_599",
+                         "article_616",
+                         "article_668",
+                         "article_692",
+                         "article_703",
+                         "article_768",
+                         "article_773",
+                         "article_818",
+                         "article_880",
+                         "article_901",
+                         "article_931",
+                         "article_966",
+                         "article_1010",
+                         "article_1017"))
+  
+```
+
+```{r}
+kwic_both <- kwic_both |>
+  mutate(category = "sentencing")
 ```
 
 
@@ -1387,5 +1060,12 @@ datatable(spacy_adj_noun_counts,
 Philip Merrill College of Journalism, University of Maryland.\
 [robwells\@umd.edu](mailto:robwells@umd.edu){.email} \| <a href="https://www.linkedin.com/in/rob-wells-7929329/">LinkedIn</a>.\
 :::
+
+::: {style="text-align: center;"}
+**Tiasia Saunders**\
+Fellow, Howard Center for Investigative Journalism.\
+Philip Merrill College of Journalism, University of Maryland.\
+[tiasias3\@umd.edu](mailto:tiasias3@umd.edu){.email} \| <a href="https://www.linkedin.com/in/tiasia-saunders-1494671b5/">LinkedIn</a>.\
+
 [--30--]{style="font-size: 18px; font-weight: bold;"}
 :::
