@@ -1,0 +1,465 @@
+---
+title: "Text analysis Sun-Afro Final"
+author: "Rob Wells, Ela Jalil, Akria Kyles"
+date: "2026-05-11"
+output: html_document
+---
+::: {style="text-align: center; color: #1FB0C4; font-weight: bold;"}
+[Baltimore Sun v. Afro American news coverage]{style="font-size: 40pt;"}
+:::
+
+May 10, 2026 <br>
+
+> This code compares news coverage of Cheltenham in the Baltimore Sun vs the Afro-American We use the Tidytext package to explore common words, analyze sentiment, and then the Quanteda package to examine keywords in the story context.
+
+<br>
+
+::: {style="text-align: center;"}
+**Rob Wells, Ph.D.**\
+Philip Merrill College of Journalism, University of Maryland.\
+[robwells\@umd.edu](mailto:robwells@umd.edu){.email} \| <a href="https://www.linkedin.com/in/rob-wells-7929329/">LinkedIn</a>.\
+:::
+
+**Ela Jalil, undergraduate student, Akria Kyles, graduate student**
+Philip Merrill College of Journalism, University of Maryland.\
+
+### Load software
+
+```{r message=FALSE, warning=FALSE}
+#Install packages if you don't have them already
+# install.packages("tidyverse")
+# install.packages("tidytext")
+# install.packages("quanteda")
+# install.packages("readtext")
+# install.packages("DT")
+# install.packages("rio")
+# install.packages("lubridate")
+# install.packages("udpipe")
+# install.packages("spacyr")
+# install.packages("zoo")
+
+
+library(tidyverse)
+library(tidytext) 
+library(quanteda)
+library(readtext)
+library(DT)
+library(lubridate)
+library(rio)
+library(udpipe)
+library(spacyr)
+library(zoo)
+library(googlesheets4)
+library(janitor)
+```
+
+```{r message=FALSE, warning=FALSE}
+
+afro_sun <- read_csv("./input/afro_sun_articles_april_9.csv") |> 
+   mutate(yearmo = as.yearmon(date_clean))
+ 
+ #Got rid of afro_sun_articles. Changed from document_clean to document_type
+ afro_sun <- afro_sun %>%
+   mutate(document_type = case_when(
+     document_type == "ar ticle"  ~ "article",
+     document_type == "arti cle"  ~ "article",
+     document_type == "artic le"  ~ "article",
+     document_type == "articl e"  ~ "article",
+     document_type == "Article"  ~ "article",
+     TRUE ~ document_type  # Fallback to the original value if no match
+   )) 
+
+```
+
+
+
+### Letter to Editor
+```{r}
+#got rid of afro_sun_articles to afro_sun
+letters <- afro_sun |> 
+  filter(document_type =="letter_to_editor")
+```
+
+
+# KWIC search
+
+```{r}
+# Create a unique document ID for each article
+afro_sun <- afro_sun |>
+  mutate(doc_id = paste0("article_", row_number()))
+
+my_corpus <- corpus(afro_sun, text_field = "clean_text")
+
+# Add metadata 
+docvars(my_corpus)$yearmo <- afro_sun$yearmo
+```
+
+
+### Beating, injury in news articles
+
+```{r}
+#Searches by Ela, Akira, Nina
+#This search extracts articles that mention abuse of the boys, including beating, hitting, striking, injury, bludgeoning, shooting. This broad search returned 630 entries which were narrowed to 60 after individual review of these search terms in context. 
+# Tokenize corpus
+my_tokens <- tokens(my_corpus)
+# Option 1: Just the regex version (more comprehensive)
+kwic_beating_injury <- kwic(
+  my_tokens,
+  pattern = c(
+    "\\bbeat(ing|en|s)?\\b",
+    "\\bhit(ting)?\\b",
+    "\\b(struck|strike|strikes|striking)\\b",
+    "\\bbludgeon(ed|ing|s)?\\b",
+    "\\b(shot|shooting)\\b",
+    "\\binjur(ed|y|ies|ing)\\b"
+  ),
+  valuetype = "regex",
+  window = 20
+) |>
+  as.data.frame() |>
+  mutate(doc_id = docname) |>
+  #filtering out random terms from the search
+  filter(!grepl("^white$|hitude|hity|hither|architecture", keyword, ignore.case = TRUE))
+
+```
+
+
+
+```{r}
+### Fact check: Examine a single article
+
+afro_sun$clean_text[436] |>
+  strwrap(width = 60) |>
+  writeLines("temp_text.txt")
+
+file.edit("temp_text.txt")
+
+```
+
+
+```{r}
+
+#In this section, we reviewed each of the 630 entries in kwic_beating_injury and we noted incorrect or irrelevant passages that don't meet the criteria for news stories about beating, injuries of Cheltenham boys.
+
+#69, 71 marks abuse but not beating
+#80 mentions beating but would be better under slavery mention,
+#855 (mentions cruelty at Cheltenham)
+
+#These should not be in the abuse list:
+# 1892-04-20 1892 The_Sun Trial of a Boy for Murder (453)
+# 1895-09-06 1895 The_Sun KILLED BY A BRICK (440)
+
+
+#Get rid of 27 (about police brutality), would detain boys in the jail before heading to Cheltenham,29, 40, 62,65 and 67 may be repeats, 69, 71 marks abuse but not beating,80 mentions beating but would be better under slavery mention, 86, 90, 97 (includes names of boys), 99, 102 (escapes),104, 109, 122, 124 (boys beat up an elderly man and were sentenced to Cheltenham), 130, 134 (boy is "feeble minded"), 135, 139, 142, 144, 149, 153, 154, 168 (doesn't mention Cheltenham), 173 (boys parents had died and they were living on the streets),       
+#118 - boy commits suicide while convict leased, boy's name is included
+#a Baltimore night club waitress is anxious for MR. MUSE to reimburse her for the money she
+#spent for lawyer's fees to keep his son out of Cheltenham. She can be reached at 1031 McCulloh Street (174), 178 (violating parole), 184, 188, 193,203, 210 (boy beat by his mother instead of going to Cheltenham), 214, 235, 243, 245 (rape charge against four boys for someone in the institution), 249, 263, 272, 298, 303, 304 (man was fired after eating in a white dining room), 315, 319, 325, 328 (pretty sure this is about boys beating up other boys), 344, 349, 351, 352, 353, 355, 358 (said a boy raped the toddler daughter of a white farmer he was working for), 370, 373, 378 (held up a "little white boy" doesn't give same consideration to Black children), 379,380,382,385, 393, 398, 407, 408, 413, 416, 417, 418, 426, 433, 435, 438, 449,455 (mentioned a special dispatch, did Cheltenham have a partnership with The Sun?),457 (a boy was arrested on the complaint of someone from the Charity Organization Society), 458,470,472,476,486, 487(boys escaped),489, 495,491, 497(easy for boys to escape, neighbors are unhappy),500,503,504,506(boys were sentenced to prison for beating up a guard),511(boys attempted to kill teacher to escape),516,529,531,533,543,545,546,552,557,562,564,565,566,571,572,574,584,585, 586,591,595,598,603(boy repeatedly ran away from Cheltenham),610,613,617,631,638,643(University of Maryland using Cheltenham's steady labor supply?),663, 668(State takeover process),669, 671,674,695,701,709(mention of boy working for a farmer),711,712,714,715,718,719,720,726,735,738,744,745,749,753,755,759,768,772,782,821,823,824,827,831,832(letter to the editor about firing superintendent),878,882,883,886, 898, 900, 921,928(says that children are like wild animals), 939,942,949(op ed that says she didn't believe the abuse reports),951,963,968,981(not paying unfit employees),988, 992,1000 (St Mary's can't afford to send more boys to Cheltenham),1007,1008,1010,1014,1020 (frames state takeover to be because inability to reform boys),1023,
+#615 - first Sun article about abuse at the institution, 660 (mentions abuse but focuses more on the "violence of the boys")
+#Not sure about 386 - a Cheltenham official hit a boy with a car but not sure if that was outside of the institution, 440 (a boy killed another boy in the institution). 453 (another case where a boy killed another boy), 855 (mentions cruelty at Cheltenham), 1026(discusses unfair labor usage of boys),1030.
+#482 - a boy murders one of his employers because he doesn't get treated properly 
+#figure out ways to tighten up the search. 483 (says that they made him do intense farm work and didn't pay him, and talks about how bad Cheltenham was and that the bigger boys made the little boys do whatever they wanted, were going to lynch him), 484,  
+#Maybe it would be interesting to explore WHY a boy got sent to Cheltenham, I've seen passing a bad dollar, vagrancy etc. Also different way they describe the boys. 
+```
+
+### Creating case_when function to add codes
+Here we compile the entries that should be excluded for the final analysis
+
+```{r}
+kwic_ids <- kwic_beating_injury |>
+  mutate(doc_id_num = as.integer(str_extract(doc_id, "\\d+"))) |>
+  dplyr::pull(doc_id_num) |>
+  unique()
+
+# Doc IDs to exclude
+exclude_ids <- c(
+  27, 29, 40, 62, 65, 67, 86, 90, 97, 99, 102, 104, 109, 118,
+  122, 124, 130, 134, 135, 139, 142, 144, 149, 153, 154, 168, 173, 174,
+  178, 184, 188, 193, 203, 210, 214, 235, 243, 245, 249, 263, 272, 298,
+  303, 304, 315, 319, 325, 328, 344, 349, 351, 352, 353, 355, 358, 370,
+  373, 378, 379, 380, 382, 385, 393, 398, 407, 408, 413, 416, 417, 418,
+  426, 433, 435, 438, 440, 449, 453, 455, 457, 458, 470, 472, 476, 482,
+  483, 484, 486, 487, 489, 491, 495, 497, 500, 503, 504, 506, 511, 516,
+  529, 531, 533, 543, 545, 546, 552, 557, 562, 564, 565, 566, 571, 572,
+  574, 584, 585, 586, 591, 595, 598, 603, 610, 613, 617, 631, 638, 643,
+  663, 668, 669, 671, 674, 695, 701, 709, 711, 712, 714, 715, 718, 719,
+  720, 726, 735, 738, 744, 745, 749, 753, 755, 759, 768, 772, 782, 821,
+  823, 824, 827, 831, 832, 878, 882, 883, 886, 898, 900, 921, 928,
+  939, 942, 949, 951, 963, 968, 981, 988, 992, 1000, 1007, 1008, 1010,
+  1014, 1020, 1023
+)
+
+afro_sun <- afro_sun |>
+  mutate(
+    doc_id_num = as.integer(str_extract(doc_id, "\\d+")),
+    categories = case_when(
+      doc_id_num %in% kwic_ids & !doc_id_num %in% exclude_ids ~ "beating_injury",
+      TRUE ~ NA_character_
+    )
+  )
+
+# Quick check
+afro_sun |> count(categories)
+
+beating <- afro_sun %>% 
+  filter(categories == "beating_injury")
+#Added 3 back but got rid of 2, so now there's 61 results
+```
+
+
+## Adding whipping to the beating data
+
+```{r}
+kwic_whipped <- kwic(my_tokens, 
+                     pattern = c("\\bwhip(ped|ping|s)?\\b", "\\bschad\\b", "\\bstrap(ped|ping|s)?\\b", "\\bbelt(ed|ing|s)?\\b"), 
+                     valuetype = "regex",
+                     window = 20) |> 
+  as.data.frame() |>
+  mutate(doc_id = docname) |>
+  filter(!grepl("\\b(strapping|belting|belt out|conveyor belt|seat belt|tool belt|bootstrap|bootstrapped)\\b", 
+                keyword, ignore.case = TRUE))
+#3 (Saying that the boys are not mistreated),168, 210(boys mom beat him instead of going to Cheltenham),362, 449(talks about boys ),482,484, 491 (father filed for incorrigibility which sentenced the boy to Cheltenham), 495 (boys sentenced to Cheltenham), 516 (says that the charges of mistreatment are "malicious"),531,569,617(court case mention with a Cheltenham official), 661 (talks about Cheltenham court case), 886
+#45(talks about convict leasing), 211 (schad beating), 233 (teacher's dying confession is that he whipped boys)
+#240 (believe that this is a photo gallery, but mentions beating), 872 (kind of talks around the abuse, not sure if it should be included)
+```
+
+## Assigning codes to kwic_whipped
+
+```{r}
+# Get the doc_id_nums from the kwic search
+kwic_whipped_ids <- kwic_whipped |>
+  mutate(doc_id_num = as.integer(str_extract(doc_id, "\\d+"))) |>
+  dplyr::pull(doc_id_num) |>
+  unique()
+
+# Doc IDs to exclude
+exclude_whipped_ids <- c(
+  3, 168, 210, 362, 449, 482, 484, 491, 495, 516, 531, 569, 617, 661, 886
+)
+
+afro_sun <- afro_sun |>
+  mutate(
+    doc_id_num = as.integer(str_extract(doc_id, "\\d+")),
+    categories = case_when(
+      doc_id_num %in% kwic_whipped_ids & !doc_id_num %in% exclude_whipped_ids ~ "beating_injury",
+      TRUE ~ categories  # preserve existing category assignments
+    )
+  )
+
+# Quick check
+afro_sun |> count(categories)
+
+beating <- afro_sun %>% 
+  filter(categories == "beating_injury")
+#This adds 10 more articles to the beating_injury database
+#Now says that 70 articles have beating injury
+#
+```
+
+
+```{r}
+
+# delete article_38. repeats article_35
+# delete article_56. repeats article_50
+# delete article_69. doesnt describe a cheltenham beating
+# delete article_71. doesnt describe a cheltenham beating
+# delete article_74. doesnt describe a cheltenham beating
+# delete article_114. doesnt describe a cheltenham beating
+# delete article_313.doesnt describe a cheltenham beating
+# delete article_386. doesnt describe a cheltenham beating
+# delete article_456. doesnt describe a cheltenham beating
+# delete article_662. doesnt describe a cheltenham beating
+# delete article_861. doesnt describe a cheltenham beating
+# delete article_872. doesnt describe a cheltenham beating
+# delete article_996. doesnt describe a cheltenham beating
+# delete article_1007. doesnt describe a cheltenham beating
+# delete article_1030. doesnt describe a cheltenham beating
+# delete article_1062. doesnt describe a cheltenham beating
+
+# Doc IDs to exclude
+exclude_fc_ids <- c(38, 56, 69, 71, 74, 114, 313, 386, 456, 662, 861, 872, 996, 1007, 1030, 1062
+)
+
+afro_sun <- afro_sun |>
+  mutate(
+    doc_id_num = as.integer(str_extract(doc_id, "\\d+")),
+    categories = case_when(
+      doc_id_num %in% kwic_whipped_ids & !doc_id_num %in% exclude_fc_ids ~ " ",
+      TRUE ~ categories  # preserve existing category assignments
+    )
+  )
+```
+
+
+### One-time cleaning
+```{r}
+
+afro_sun <- afro_sun |> 
+  filter(!doc_id %in% c("article_436", "article_607", "article_646", "article_699", "article_700", "article_722", "article_732"))
+#delete junk article
+
+```
+
+# New abuse articles total 
+```{r}
+afro_sun %>% 
+  filter(categories == "beating_injury") %>% 
+  count(pubtitle)
+
+#Old:
+#Afro - 46/319= 14.4%
+#Sun - 25/711= 3.5% 
+#Afro has 4 times the amount of coverage
+#new:
+#Afro - 31/319= 9.7%
+#Sun - 19/704= 2.7% 
+#stories about abuse of the boys appeared in the Afro at roughly 3.5 times the rate of The Baltimore Sun
+
+```
+# Title count
+
+```{r}
+afro_sun |> 
+  count(pubtitle) |> 
+  arrange(desc(n))
+# The_Sun	704		
+# Afro_American	319	
+```
+
+```{r}
+#data for Ela to create a graphic in flourish
+# Create the summary data
+year_pub_summary <- afro_sun |> 
+  group_by(pubtitle, year) |> 
+  summarise(total = n(), .groups = "drop")
+
+# Export to CSV for Flourish
+# write.csv(year_pub_summary, "cheltenham_coverage_by_year_may_10.csv", row.names = FALSE)
+```
+
+### Yearly count by publication
+```{r}
+compare <- afro_sun |> 
+  group_by(pubtitle) |> 
+  count(year, name = "total") |> 
+  pivot_wider(
+    names_from = pubtitle,  # This turns publication titles into column headers
+    values_from = total,    # This fills the cells with your counts
+    values_fill = 0         # This replaces any missing years/counts with 0 instead of NA
+  ) |> 
+  mutate(Afro_Greater = Afro_American > The_Sun)
+head(compare)
+```
+
+```{r}
+#data for Ela to create a graphic in flourish
+# Create the summary data
+year_pub_summary <- afro_sun |> 
+  group_by(pubtitle, year) |> 
+  summarise(total = n(), .groups = "drop")
+
+# Export to CSV for Flourish
+# write.csv(year_pub_summary, "cheltenham_coverage_by_year.csv", row.names = FALSE)
+```
+### Count document types by publication
+
+```{r}
+
+doc <- afro_sun |> 
+  group_by(pubtitle) |> 
+  count(document_type)
+
+```
+
+# Sentencing data 
+
+### An analysis of how the two news outlets report on the Black boys being sentenced to the House of Reformation. 
+
+```{r}
+# Get articles mentioning "House of Reformation" - using grepl instead of kwic
+house_docs <- afro_sun |>
+  filter(grepl("reformation|cheltenham|reform school", clean_text, ignore.case = TRUE)) |>
+  select(doc_id, pubtitle, clean_text) |>
+  rename(docname = doc_id)
+
+# Get articles mentioning sentencing terms
+sentencing_docs <- kwic(my_tokens, 
+                        pattern = c("sentenced", "sent to", "prison sentence", "years in prison", "committed"),
+                        valuetype = "fixed") |> 
+  as.data.frame() |> 
+  distinct(docname, keyword, .keep_all = TRUE)
+
+# Keep only articles appearing in BOTH
+kwic_both <- sentencing_docs |> 
+  filter(docname %in% house_docs$docname) |> 
+   left_join(afro_sun |> select(doc_id, pubtitle), by = c("docname" = "doc_id"))
+
+sentencing_docs <- sentencing_docs |> 
+  left_join(afro_sun |> select(doc_id, pubtitle), by = c("docname" = "doc_id"))
+
+sentencing_docs |> 
+  count(pubtitle)
+
+# Sentencing articles: 216
+# Afro_American	71			
+# The_Sun	145	
+```
+
+### Revised sentencing total
+```{r}
+kwic_both <- kwic_both |>
+  filter(!docname %in% c("article_74",
+                         "article_130",
+                         "article_139",
+                         "article_175",
+                         "article_53",
+                         "article_57",
+                         "article_72",
+                         "article_91",
+                         "article_115",
+                         "article_118",
+                         "article_141",
+                         "article_189",
+                         "article_198",
+                         "article_258",
+                         "article_319",
+                         "article_344",
+                         "article_353",
+                         "article_374",
+                         "article_387",
+                         "article_413",
+                         "article_153",
+                         "article_425",
+                         "article_459",
+                         "article_480",
+                         "article_498",
+                         "article_19",
+                         "article_526",
+                         "article_577",
+                         "article_582",
+                         "article_599",
+                         "article_616",
+                         "article_668",
+                         "article_692",
+                         "article_703",
+                         "article_768",
+                         "article_773",
+                         "article_818",
+                         "article_880",
+                         "article_901",
+                         "article_931",
+                         "article_966",
+                         "article_1010",
+                         "article_1017"))
+
+kwic_both <- kwic_both |>
+  mutate(category = "sentencing")
+```
+
+```{r}
+kwic_both |> 
+  count(pubtitle)
+
+#Sentencing articles: 165
+# Afro_American	50			
+# The_Sun	115	
+```
