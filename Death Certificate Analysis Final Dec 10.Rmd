@@ -58,7 +58,7 @@ parents <- read_csv("./input/Class Version Death Certificate Names - Sheet2.csv"
 dc_plus <- dc |> 
   left_join(parents, by=c("personal_id"))
 
-write_csv(dc_plus, "./input/master_dc_data_feb_4.csv")
+#write_csv(dc_plus, "./input/master_dc_data_feb_4.csv")
 
 ```
 
@@ -224,10 +224,20 @@ summary_long <- dc |>
   filter(cause =="tuberculosis") |> 
   filter(count > 0)
 
-write_csv(tuber_long, "summary_tuberculosis_deaths_dc.csv")
+#write_csv(tuber_long, "summary_tuberculosis_deaths_dc.csv")
 
 ```
 
+
+### Cheltenham tuberculosis deaths
+```{r}
+chelt_tuber <- tuber_long |> 
+  filter(facility == "cheltenham") |> 
+  filter(cause == "tuberculosis")
+
+sum(chelt_tuber$count)
+#[1] 86 TB DEATHS 1887-1936
+```
 
 
 
