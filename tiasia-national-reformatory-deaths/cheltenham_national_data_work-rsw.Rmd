@@ -6,14 +6,8 @@ output: html_document
 ---
 
 
-#rsw comment
-Things to fix
-
-1) there are two entries for Tennessee Vocational School for Colored Girls. No deaths, so it doesn't affect the death count but it should be removed and keep one or the other
-
-2) industrial home for girls not geocoded
-
-3) the chart needs to be updated with a new top 10 reform schools and death counts. see below with a new top 10 list
+#rsw comment, oct 13 
+next fix- rerun the map because we changed the totals for the State Reform Farm to 20 from 22.
 
 ### National Reformatory Death Tracker Data Dictionary:  
 
@@ -88,7 +82,7 @@ library(tidygeocoder)
 #rsw comment: 
 #loads new data from spreadsheet:
 # https://docs.google.com/spreadsheets/d/1ZVenf5dHzHqVp1eGuIqtRBkAORZHT1Gh5lLiLYQMaCY/edit?usp=sharing - see tab "cleaned_map_data" - downloaded to csv below
-national_death_tracker <- read_csv("National_Reformatory_Death_Tracker_cleaned_map_data_oct_8.csv") |>
+national_death_tracker <- read_csv("National_Reformatory_Death_Tracker_cleaned_map_data_oct_13.csv") |>
   clean_names()
 
 
@@ -97,7 +91,7 @@ national_death_tracker <- read_csv("National_Reformatory_Death_Tracker_cleaned_m
 ### deleting the row of all na values 
 
 national_death_tracker <- national_death_tracker |> 
-  slice(-1)#rsw comment changed to row 1 from 92
+ filter(!is.na(name_of_facility))
 ```
 
 
@@ -114,14 +108,10 @@ display dupes
 ```{r}
 
 dupes <- national_death_tracker |> 
-  filter(name_of_facility %in% c("State Reform School", "Tennessee Vocational School for Colored Girls"))
+  filter(name_of_facility %in% c("State Reform School"))
 
-#state reform school entries are ok. there are two entries for Tennessee Vocational School for Colored Girls. No deaths, so it doesn't affect the death count but it should be removed and keep one or the other
+#state reform school entries are ok, all from different states
 
-tenn <- national_death_tracker |> 
-  filter(name_of_facility %in% c("Tennessee Vocational School for Colored Girls"))
-
-tenn
 ```
 
 # Checking duplicates on city
@@ -132,7 +122,7 @@ national_death_tracker |>
 
 ```
 
-# no duplicates except for Nashville
+# no duplicates 
 ```{r}
 dupes_city <- national_death_tracker |> 
   filter(city %in% c("Baltimore", "Cranston","Florence", "Geneva","Lancaster", "Monroe","Nashville","Salem"))
@@ -234,7 +224,7 @@ ggplot(facility_type_count, aes(x = "", y = n, fill = facility_type)) +
   theme(legend.position = "right")
 ```
 
-##### We have 52 reformatories, 36 industrial schools, and 3 correctional facilities in our dataset. 
+##### We have 52 reformatories, 36 industrial schools, and 2 correctional facilities in our dataset. 
 
 ##### Gender Count Breakdown 
 
@@ -267,7 +257,7 @@ gender_count <- national_death_tracker |>
   theme(legend.position = "right")
 ```
 
-##### We have 40 boys facilities, 30 girls facilities, and 21 both genders facilities.
+##### We have 40 boys facilities, 29 girls facilities, and 21 both genders facilities.
 
 ##### Race Count Breakdown 
 
@@ -291,7 +281,7 @@ ggplot(race_count, aes(x = "", y = n, fill = race)) +
   theme(legend.position = "right")
 ```
 
-##### We have 18 white facilities, 17 black facilities, 12 facilities with all races but segregated, 1 Pacific Islander facility, and 10 facilities with both white and black races.
+##### We have 18 white facilities, 16 black facilities, 12 facilities with all races but segregated, 1 Pacific Islander facility, and 10 facilities with both white and black races.
 
 ##### Cemetery Count Breakdown
 ```{r}
@@ -314,7 +304,7 @@ ggplot(cemetery_count, aes(x = "", y = n, fill = cemetery)) +
   theme(legend.position = "right")
 ```
 
-#### We have 23 facilities with cemeteries, 62 without cemeteries, and 6 to be possible. 
+#### We have 23 facilities with cemeteries, 61 without cemeteries, and 6 to be possible. 
 
 ##### State of Cemetery Breakdown 
 
@@ -342,12 +332,11 @@ ggplot(state_of_cemetery_breakdown, aes(x = "", y = n, fill = state_of_cemetery)
 
 ##### Abandoned Cemeteries Death Count
 
-```{r}
 ## counting the number of deaths for abandoned cemeteries 
 abandoned_cemetery_count <- national_death_tracker |> 
   filter(state_of_cemetery == "abandoned") |> 
   summarise(total_deaths = sum(deaths_clean, na.rm = TRUE))
-```
+
 
 ##### So, we have 243 deaths that are associated with abandoned cemeteries. Out of those, 243 is from the Cheltenham Reformatory. 
 
@@ -407,7 +396,7 @@ ggplot(abuse_allegations_count, aes(x = "", y = n, fill = allegations_of_abuse))
   theme(legend.position = "right")
 ```
 
-##### We have 50 facilities with allegations of abuse and 41 unknown.
+##### We have 51 facilities with allegations of abuse and 39 unknown.
 
 ```{r}
 ggplot(forced_labor_count, aes(x = "", y = n, fill = allegations_of_forced_labor)) +
@@ -423,7 +412,7 @@ ggplot(forced_labor_count, aes(x = "", y = n, fill = allegations_of_forced_labor
   theme(legend.position = "right")
 ```
 
-##### We have 20 facilities with allegations of forced labor and 71 unknown.
+##### We have 21 facilities with allegations of forced labor and 69 unknown.
 
 
 ##### Death Count Total 
@@ -434,6 +423,13 @@ national_death_tracker <- national_death_tracker |>
   total_deaths <- sum(national_death_tracker$deaths_clean, na.rm = TRUE) 
   total_deaths
 ```
+
+#Total death count
+```{r}
+print(paste0("As of Oct 13, 2026, our total death count is: ",total_deaths))
+```
+
+
 
 #Top 10 institutions by death
 ```{r}
@@ -446,7 +442,7 @@ top_10 <- national_death_tracker |>
 ```{r}
 #82% of the deaths come from the top 10 institutions
 top_10 |> 
- summarize(prop = sum(deaths_clean, na.rm = TRUE) / 1247)
+ summarize(prop = sum(deaths_clean, na.rm = TRUE) / total_deaths)
 
 ```
 
@@ -459,7 +455,6 @@ looking_at_death_counts <- national_death_tracker |>
   select(deaths_na, deaths_clean, death_qualifiers)
 ```
 
-#####  So looks like we have a total of [new#] 1247 [old#_1016] deaths across all of these reformatories, correctional facilities, and industrial schools. 
 
 
 - Findings:
@@ -480,46 +475,13 @@ looking_at_death_counts <- national_death_tracker |>
 - It looks like we have a total of 1016 deaths across all of these reformatories, correctional facilities, and industrial schools. 
 
   
-  
+# Wells fact check the death counts  
 ```{r}
 rsw_looking_at_death_counts <- national_death_tracker |> 
   select(name_of_facility, city_state, deaths_clean, deaths_na, death_qualifiers) |> 
   arrange(desc(deaths_clean))
 ```
 
-#rsw questions
-
-Florida State Reform School: Why are we using 77 for the Dozier school (Florida State Reform School). AP says 100. https://www.cnn.com/2025/01/01/us/dozier-school-abuse-restitution
-
-
-New York House of Refuge: the 101 deaths come from Find A Grave. Any other source back up that 101 deaths number?
-
-
-State Reform and Industrial School for Girls	Delaware, Ohio. We're assuming everyone buried there was from the girls school. How do we know this?
---Cant access the Columbus Dispatch articles
-
-Industrial School for Boys	Lansing, Michigan
-Can't access this article
-https://www.lansingcitypulse.com/stories/nonprofit-to-mark-graves-of-61-boys-at-mt-hope-cemetery,12395
-
-
-
-
-The top 10 on this list account for 77% of all the deaths.
-```{r}
-top10 <- (243+101+77+72+61+59+51+44+40+38)
-
-top10/1016
-
-```
-
-
-```{r}
-
-rsw_looking_at_death_counts |> 
-  slice_max(order_by = deaths_clean, n=10)
-
-```
 
 
 
